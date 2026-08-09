@@ -6,7 +6,12 @@
 // Aucun outillage : Node 24 exécute le TypeScript tel quel.
 import {
   additionnerNiveaux,
+  altitudeDuSol,
   calculerCarte,
+  couvertureSalle,
+  couvertureZone,
+  encadrement,
+  pointDansPolygone,
   angleDepuisAxe,
   attenuationAngulaire,
   celeriteSon,
@@ -207,6 +212,134 @@ try {
   refusSansEnceinte = erreur.message
 }
 verifier('une carte sans enceinte est refusée', refusSansEnceinte !== null)
+
+console.log('\n=== Zones dessinées librement ===')
+
+const carre = [
+  { x: 0, y: 0 },
+  { x: 10, y: 0 },
+  { x: 10, y: 10 },
+  { x: 0, y: 10 }
+]
+verifier('un point au centre est dans le contour', pointDansPolygone(carre, { x: 5, y: 5 }))
+verifier('un point dehors ne l’est pas', !pointDansPolygone(carre, { x: 15, y: 5 }))
+
+// Une forme en L : c'est là qu'un simple rectangle englobant se trompe.
+const formeEnL = [
+  { x: 0, y: 0 },
+  { x: 10, y: 0 },
+  { x: 10, y: 4 },
+  { x: 4, y: 4 },
+  { x: 4, y: 10 },
+  { x: 0, y: 10 }
+]
+verifier('un point dans la branche du L est dedans', pointDansPolygone(formeEnL, { x: 2, y: 8 }))
+verifier(
+  'le creux du L est bien exclu',
+  !pointDansPolygone(formeEnL, { x: 8, y: 8 }),
+  'un rectangle englobant l’aurait accepté'
+)
+
+const cadre = encadrement(formeEnL)
+verifier(
+  'l’encadrement couvre toute la forme',
+  cadre.xMin === 0 && cadre.xMax === 10 && cadre.yMin === 0 && cadre.yMax === 10
+)
+
+console.log('\n=== Pentes ===')
+
+const gradins = {
+  nom: 'Gradins',
+  contour: [
+    { x: 0, y: 12 },
+    { x: 10, y: 12 },
+    { x: 10, y: 20 },
+    { x: 0, y: 20 }
+  ],
+  hauteurOreilles: 1.2,
+  pentePourcent: 15,
+  directionPenteDegres: 90
+}
+
+verifier('au premier rang, le sol est à son altitude', proche(altitudeDuSol(gradins, { x: 5, y: 12 }), 0))
+// 8 mètres à 15 % : 1,20 m de plus. Le dernier rang voit par-dessus les autres.
+verifier(
+  'huit mètres à 15 % montent de 1,20 m',
+  proche(altitudeDuSol(gradins, { x: 5, y: 20 }), 1.2),
+  altitudeDuSol(gradins, { x: 5, y: 20 }).toFixed(3)
+)
+verifier(
+  'sans pente déclarée, le sol est plat',
+  altitudeDuSol({ ...gradins, pentePourcent: 0 }, { x: 5, y: 20 }) === 0
+)
+
+console.log('\n=== Couverture par zones ===')
+
+const parterre = {
+  nom: 'Parterre',
+  contour: [
+    { x: 0, y: 0 },
+    { x: 10, y: 0 },
+    { x: 10, y: 12 },
+    { x: 0, y: 12 }
+  ],
+  hauteurOreilles: 1.2
+}
+const enceinteSalle = {
+  nom: 'Centre',
+  position: { x: 5, y: -2, z: 4 },
+  visee: { x: 5, y: 14, z: 1.2 },
+  niveau1m: 100,
+  ouverture: { 1000: 90 }
+}
+
+const couverture = couvertureZone(parterre, [enceinteSalle], 1000, 0.5)
+verifier('la zone est parcourue point par point', couverture.points.length === 480, String(couverture.points.length))
+verifier('aucun point ne vaut l’infini', couverture.points.every((p) => Number.isFinite(p.niveau)))
+verifier(
+  'chaque point porte sa hauteur d’écoute',
+  couverture.points.every((p) => proche(p.z, 1.2))
+)
+
+const surGradins = couvertureZone(gradins, [enceinteSalle], 1000, 0.5)
+verifier(
+  'sur les gradins, les oreilles montent avec le sol',
+  surGradins.points.some((p) => p.z > 2) && surGradins.points.every((p) => p.z >= 1.2)
+)
+
+const salleEntiere = couvertureSalle([parterre, gradins], [enceinteSalle], 1000, 0.5)
+verifier('les deux zones sont calculées', salleEntiere.zones.length === 2)
+
+// Le point qui compte : l'écart de la salle est celui du pire au meilleur point,
+// pas la moyenne des écarts. Une salle dont le balcon est 12 dB en dessous
+// n'est pas bien couverte, même si chaque zone prise seule est régulière.
+verifier(
+  'l’écart de la salle englobe celui de chaque zone',
+  salleEntiere.ecart >= Math.max(...salleEntiere.zones.map((z) => z.ecart)),
+  `${salleEntiere.ecart.toFixed(1)} dB contre ${salleEntiere.zones
+    .map((z) => z.ecart.toFixed(1))
+    .join(' et ')}`
+)
+
+let refusContour = null
+try {
+  couvertureZone({ ...parterre, contour: [{ x: 0, y: 0 }, { x: 1, y: 1 }] }, [enceinteSalle], 1000)
+} catch (erreur) {
+  refusContour = erreur.message
+}
+verifier(
+  'une zone à moins de trois sommets est refusée',
+  refusContour !== null && refusContour.includes('trois sommets'),
+  refusContour ?? 'aucune erreur'
+)
+
+let refusVide = null
+try {
+  couvertureSalle([], [enceinteSalle], 1000)
+} catch (erreur) {
+  refusVide = erreur.message
+}
+verifier('une salle sans zone est refusée', refusVide !== null)
 
 console.log(echecs === 0 ? '\nACOUSTIQUE : TOUS LES TESTS PASSENT' : `\n${echecs} TEST(S) EN ECHEC`)
 process.exitCode = echecs === 0 ? 0 : 1

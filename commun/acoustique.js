@@ -328,3 +328,195 @@ export function calculerCarte(salle, enceintes, bande, pas = 0.5) {
     ecart: maximum - minimum
   }
 }
+
+/* ── Zones d'écoute quelconques, et pentes ───────────────────────────────── */
+
+/**
+ * Une zone d'écoute : un contour dessiné librement, avec sa pente.
+ *
+ * Une salle n'est presque jamais un rectangle plat. Un parterre, un balcon et
+ * des gradins n'ont ni la même forme ni la même hauteur, et c'est justement là
+ * que les placements se jouent : le dernier rang d'un balcon est le point qu'on
+ * oublie et qui n'entend rien.
+ *
+ * @typedef {object} Zone
+ * @property {string} nom
+ * @property {Point2D[]} contour Sommets du polygone, en mètres, dans l'ordre.
+ * @property {number} hauteurOreilles Hauteur d'écoute au-dessus du sol de la zone.
+ * @property {number} [altitude] Hauteur du sol au point de référence. 0 par défaut.
+ * @property {number} [pentePourcent] Pente du sol, en %. 10 % = 10 cm par mètre.
+ * @property {number} [directionPenteDegres] Direction de la montée, 0° = +x,
+ *   90° = +y. La pente monte dans cette direction.
+ */
+
+/**
+ * @typedef {object} Point2D
+ * @property {number} x
+ * @property {number} y
+ */
+
+/**
+ * Le point du contour qui sert d'origine à la pente : le premier sommet.
+ * Choisi une fois pour toutes pour que la même zone donne toujours les mêmes
+ * altitudes, quel que soit l'ordre dans lequel on calcule.
+ * @param {Zone} zone
+ * @returns {Point2D}
+ */
+function origineDeLaPente(zone) {
+  return zone.contour[0]
+}
+
+/**
+ * Altitude du sol en un point de la zone, en mètres.
+ * @param {Zone} zone
+ * @param {Point2D} point
+ * @returns {number}
+ */
+export function altitudeDuSol(zone, point) {
+  const pente = (zone.pentePourcent ?? 0) / 100
+  if (pente === 0) return zone.altitude ?? 0
+
+  const origine = origineDeLaPente(zone)
+  const angle = ((zone.directionPenteDegres ?? 0) * Math.PI) / 180
+  // Distance parcourue dans la direction de la montée, projetée.
+  const avancee = (point.x - origine.x) * Math.cos(angle) + (point.y - origine.y) * Math.sin(angle)
+  return (zone.altitude ?? 0) + avancee * pente
+}
+
+/**
+ * Le point est-il dans le polygone ? Algorithme du lancer de rayon.
+ *
+ * Un point exactement sur une arête est ambigu par nature ; on ne cherche pas à
+ * trancher, une case de grille au bord ne change rien à un placement.
+ *
+ * @param {Point2D[]} contour
+ * @param {Point2D} point
+ * @returns {boolean}
+ */
+export function pointDansPolygone(contour, point) {
+  let dedans = false
+  for (let i = 0, j = contour.length - 1; i < contour.length; j = i, i += 1) {
+    const a = contour[i]
+    const b = contour[j]
+    const traverse = a.y > point.y !== b.y > point.y
+    if (!traverse) continue
+    const x = ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x
+    if (point.x < x) dedans = !dedans
+  }
+  return dedans
+}
+
+/**
+ * Le rectangle qui contient la zone. Sert à ne pas parcourir toute la salle
+ * pour une zone qui n'en occupe qu'un coin.
+ * @param {Point2D[]} contour
+ * @returns {{ xMin: number, xMax: number, yMin: number, yMax: number }}
+ */
+export function encadrement(contour) {
+  const xs = contour.map((p) => p.x)
+  const ys = contour.map((p) => p.y)
+  return {
+    xMin: Math.min(...xs),
+    xMax: Math.max(...xs),
+    yMin: Math.min(...ys),
+    yMax: Math.max(...ys)
+  }
+}
+
+/**
+ * @typedef {object} PointCalcule
+ * @property {number} x
+ * @property {number} y
+ * @property {number} z Hauteur d'oreilles réelle, pente comprise.
+ * @property {number} niveau
+ */
+
+/**
+ * @typedef {object} CouvertureZone
+ * @property {string} nom
+ * @property {PointCalcule[]} points
+ * @property {number} minimum
+ * @property {number} maximum
+ * @property {number} moyenne
+ * @property {number} ecart
+ */
+
+/**
+ * Couverture d'une zone quelconque, pente comprise.
+ *
+ * Contrairement à `calculerCarte`, qui suppose un rectangle plat, cette
+ * fonction n'énumère que les points **dans** le contour et place chacun à la
+ * hauteur que lui donne la pente. Le calcul de niveau, lui, ne change pas :
+ * c'est toujours `niveauTotal`, déjà vérifié.
+ *
+ * @param {Zone} zone
+ * @param {Enceinte[]} enceintes
+ * @param {number} bande
+ * @param {number} [pas]
+ * @returns {CouvertureZone}
+ */
+export function couvertureZone(zone, enceintes, bande, pas = 0.5) {
+  if (pas <= 0) throw new Error('Le pas de la grille doit être supérieur à zéro.')
+  if (zone.contour.length < 3) {
+    throw new Error(`La zone « ${zone.nom} » doit avoir au moins trois sommets.`)
+  }
+  if (enceintes.length === 0) throw new Error('Il faut au moins une enceinte.')
+
+  const cadre = encadrement(zone.contour)
+  /** @type {PointCalcule[]} */
+  const points = []
+  let minimum = Infinity
+  let maximum = -Infinity
+  let somme = 0
+
+  for (let y = cadre.yMin + pas / 2; y < cadre.yMax; y += pas) {
+    for (let x = cadre.xMin + pas / 2; x < cadre.xMax; x += pas) {
+      if (!pointDansPolygone(zone.contour, { x, y })) continue
+
+      const z = altitudeDuSol(zone, { x, y }) + zone.hauteurOreilles
+      const niveau = niveauTotal(enceintes, { x, y, z }, bande)
+      points.push({ x, y, z, niveau })
+      if (niveau < minimum) minimum = niveau
+      if (niveau > maximum) maximum = niveau
+      somme += niveau
+    }
+  }
+
+  if (points.length === 0) {
+    throw new Error(
+      `La zone « ${zone.nom} » est trop petite pour un pas de ${pas} m : aucun point à calculer.`
+    )
+  }
+
+  return {
+    nom: zone.nom,
+    points,
+    minimum,
+    maximum,
+    moyenne: somme / points.length,
+    ecart: maximum - minimum
+  }
+}
+
+/**
+ * Couverture de plusieurs zones, avec le bilan d'ensemble.
+ *
+ * **L'écart qui compte est celui de toute la salle**, pas la moyenne des
+ * écarts : une salle où le parterre est régulier et le balcon 12 dB en dessous
+ * n'est pas une salle bien couverte, même si chaque zone prise isolément l'est.
+ *
+ * @param {Zone[]} zones
+ * @param {Enceinte[]} enceintes
+ * @param {number} bande
+ * @param {number} [pas]
+ * @returns {{ zones: CouvertureZone[], minimum: number, maximum: number, ecart: number }}
+ */
+export function couvertureSalle(zones, enceintes, bande, pas = 0.5) {
+  if (zones.length === 0) throw new Error('Il faut au moins une zone d’écoute.')
+
+  const calculees = zones.map((zone) => couvertureZone(zone, enceintes, bande, pas))
+  const minimum = Math.min(...calculees.map((z) => z.minimum))
+  const maximum = Math.max(...calculees.map((z) => z.maximum))
+
+  return { zones: calculees, minimum, maximum, ecart: maximum - minimum }
+}

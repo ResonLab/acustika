@@ -66,13 +66,59 @@ placement sans savoir le mesurer d'abord.
 
 ---
 
+## 1 bis. Ce que l'utilisateur a demandé, en toutes lettres
+
+Demandé le 9 août 2026, et à tenir :
+
+| Attendu | Où ça en est |
+|---|---|
+| **Une bibliothèque d'enceintes** (« un stock »), pas une saisie à chaque fois | à faire |
+| **Des zones d'écoute dessinées librement**, et plusieurs par projet | **fait** dans le calcul |
+| **Des surfaces en pente** (gradins, parterre incliné) | **fait** dans le calcul |
+| **Pas de GLL** — un format ouvert à la place, et du **CSV** | décidé, voir §3 |
+| « exactement comme EASE » pour le reste | voir §2, à lire avant de promettre |
+
+**Le format ouvert cherché s'appelle CLF** (Common Loudspeaker Format). C'est
+celui de la section 3, décidé avant cette demande. **SOFA** (norme AES69) est la
+seconde piste. Le CSV reste le filet : quand aucun fichier n'est disponible, on
+saisit les données polaires à la main.
+
+Conséquence de forme, à ne pas rater : une salle rectangulaire décrite par deux
+dimensions ne suffit plus. Il fallait un modèle où **une salle contient des
+zones, chaque zone ayant son contour et sa pente**. C'est fait côté calcul :
+`couvertureZone()` n'énumère que les points **dans** le contour et place chacun
+à la hauteur que lui donne la pente. Le calcul de niveau, lui, n'a pas bougé —
+c'est toujours `niveauTotal`, déjà vérifié.
+
+Une forme en L le montre : le creux est bien exclu, là où un simple rectangle
+englobant l'aurait accepté. Des gradins de 8 m à 15 % montent de 1,20 m, et les
+oreilles montent avec le sol.
+
+**`couvertureSalle()` rend l'écart de toute la salle, pas la moyenne des
+écarts.** Une salle dont le parterre est régulier et le balcon 12 dB en dessous
+n'est pas bien couverte, même si chaque zone prise isolément l'est. C'est cette
+mesure-là qui devra guider le conseil de placement.
+
+Reste à faire pour compléter la demande : la **bibliothèque d'enceintes**, le
+**dessin des zones à la souris**, et l'**import CLF/CSV**.
+
+---
+
 ## 2. Ce qui est atteignable, et ce qui ne l'est pas
 
-**À dire franchement, une fois pour toutes : « comme EASE » n'est pas
-atteignable seul.** EASE et les logiciels de modélisation d'enceintes du même
+**À dire franchement, et ça reste vrai après la demande ci-dessus : « comme
+EASE » n'est pas atteignable seul.** EASE et les logiciels de modélisation d'enceintes du même
 niveau représentent des décennies de travail par des équipes d'acousticiens :
 lancer de rayons, géométrie 3D complète, modèles de réverbération, bases de
 données d'enceintes mesurées.
+
+**Ce qui est demandé et qui est atteignable** : la bibliothèque d'enceintes,
+les zones dessinées librement, les pentes, l'import CLF et CSV. Ce sont des
+fonctionnalités de saisie et de géométrie — du travail, pas de la recherche.
+
+**Ce qui ne l'est pas** : le lancer de rayons, la réverbération, l'intelligibilité
+prédite (STI), les bases de données d'enceintes mesurées du marché. Promettre
+cela reviendrait à livrer des cartes fausses avec l'aplomb des vraies.
 
 **Ce qui est atteignable, et déjà utile :**
 
