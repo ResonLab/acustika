@@ -4,10 +4,32 @@
 > La vue d'ensemble des trois applications est dans [../LISEZ-MOI.md](../LISEZ-MOI.md).
 > Ce fichier-ci ne concerne qu'Acustika.
 
-**État : la physique est écrite et vérifiée, et la carte de couverture
-s'affiche.** L'application Electron n'est pas encore commencée ; la carte vit
-pour l'instant dans une page (`site/carte-couverture.html`) qui servira de base
-à l'écran de l'application. Ce document décrit ce qui a été
+**État : l'application Electron existe et tourne.** Un plan où l'on dessine ses
+zones, où l'on pose ses enceintes et où la couverture se recalcule ; une
+bibliothèque d'enceintes ; un projet qui s'enregistre et se rouvre.
+
+```bash
+cd Acustika && npm install && npm run dev
+cd Acustika && npm run verifier   # typecheck + 2 suites
+```
+
+Ce que l'application sait faire aujourd'hui :
+
+| | |
+|---|---|
+| **Dessiner des zones** | à la souris, point par point, forme quelconque |
+| **Pentes** | réglables par zone, en % |
+| **Bibliothèque d'enceintes** | choisir un modèle avant de le poser ; ouverture réglable **bande par bande** |
+| **Poser et orienter** | clic pour poser, glisser pour déplacer, second point pour la visée |
+| **Carte de couverture** | recalculée à chaque geste, échelle de 24 dB |
+| **Chiffres par zone** | moyenne et écart, plus l'écart de toute la salle |
+| **Projet** | fichier `.acustika` en JSON lisible, ouvrir / enregistrer |
+| **Import CSV** | une enceinte par ligne, ouverture par bande |
+
+Le projet est un **fichier**, pas une ligne de base : une simulation se
+transmet, s'archive avec un dossier de chantier, se compare. En JSON lisible —
+dans dix ans on l'ouvrira encore avec un éditeur de texte, ce qui est
+exactement le reproche fait au GLL. Ce document décrit ce qui a été
 décidé, ce qui est réaliste, et surtout ce qui ne l'est pas.
 
 ```bash

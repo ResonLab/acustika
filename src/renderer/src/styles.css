@@ -1,0 +1,295 @@
+/* Identité d'Acustika : violet clair → violet profond, sur fond sombre. */
+:root {
+  --clair: #b58cff;
+  --profond: #6d4ae0;
+  --fond: #0f0d16;
+  --carte: #191527;
+  --trait: #2f2942;
+  --texte: #efeaf8;
+  --discret: #9a91b4;
+  --ambre: #ffc961;
+  --rouge: #ff6b5e;
+  --vert: #57d99a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--trait);
+  background: #120f1c;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.marque {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.marque strong {
+  display: block;
+  line-height: 1.2;
+}
+
+.marque .discret {
+  font-size: 0.78rem;
+}
+
+.pastille {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--clair), var(--profond));
+  flex: none;
+}
+
+.entete nav {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.entete .actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.4rem;
+}
+
+main {
+  padding: 1rem;
+}
+
+.page {
+  max-width: 100%;
+}
+
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 1rem;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 1rem 0 0.7rem;
+}
+
+h3 {
+  font-size: 0.88rem;
+  margin: 1rem 0 0.5rem;
+  color: var(--discret);
+  font-weight: 500;
+}
+
+button {
+  background: linear-gradient(90deg, var(--clair), var(--profond));
+  border: 0;
+  border-radius: 6px;
+  color: #120b22;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+}
+
+button.discret,
+.entete nav button {
+  background: transparent;
+  border: 1px solid var(--trait);
+  color: var(--texte);
+  font-weight: 400;
+}
+
+.entete nav button.actif {
+  background: rgba(181, 140, 255, 0.18);
+  border-color: var(--clair);
+}
+
+.barre-outils {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.barre-outils button.actif {
+  outline: 2px solid var(--ambre);
+}
+
+.carte {
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Un tableau large ne doit jamais couper le contenu. */
+.defilable {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.4rem 0.55rem;
+  border-bottom: 1px solid var(--trait);
+  white-space: nowrap;
+}
+
+th {
+  color: var(--discret);
+  font-weight: 500;
+  font-size: 0.82rem;
+}
+
+.formulaire {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.6rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  font-size: 0.8rem;
+  color: var(--discret);
+}
+
+input,
+select {
+  background: #0b0912;
+  border: 1px solid var(--trait);
+  border-radius: 6px;
+  color: var(--texte);
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  width: 100%;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid var(--clair);
+  outline-offset: 1px;
+}
+
+.barre-boutons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+/* ── Le plan ─────────────────────────────────────────────────────────────── */
+
+.plan-corps {
+  display: grid;
+  grid-template-columns: 1fr minmax(15rem, 20rem);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 60rem) {
+  .plan-corps {
+    grid-template-columns: 1fr;
+  }
+}
+
+canvas {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  background: #0b0912;
+  display: block;
+}
+
+.panneau {
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.panneau h2:first-child {
+  margin-top: 0;
+}
+
+.chiffre-large strong {
+  display: block;
+  font-size: 1.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chiffre-large span {
+  color: var(--discret);
+  font-size: 0.8rem;
+}
+
+.zone-reglage {
+  border-top: 1px solid var(--trait);
+  padding-top: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.zone-reglage strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.discret {
+  color: var(--discret);
+}
+
+.message,
+.erreur,
+.succes,
+.avertissement {
+  border-radius: 0 6px 6px 0;
+  padding: 0.5rem 0.8rem;
+  margin: 0 0 0.8rem;
+}
+
+.message {
+  border-left: 3px solid var(--clair);
+  background: rgba(181, 140, 255, 0.09);
+}
+
+.erreur {
+  border-left: 3px solid var(--rouge);
+  background: rgba(255, 107, 94, 0.09);
+}
+
+.succes {
+  border-left: 3px solid var(--vert);
+  background: rgba(87, 217, 154, 0.09);
+}
+
+.avertissement {
+  border-left: 3px solid var(--ambre);
+  background: rgba(255, 201, 97, 0.09);
+}
