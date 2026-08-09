@@ -6,6 +6,7 @@
 // Aucun outillage : Node 24 exécute le TypeScript tel quel.
 import {
   additionnerNiveaux,
+  calculerCarte,
   angleDepuisAxe,
   attenuationAngulaire,
   celeriteSon,
@@ -16,7 +17,7 @@ import {
   niveauTotal,
   retardDAppoint,
   retardMs
-} from '../commun/acoustique.ts'
+} from '../commun/acoustique.js'
 
 let echecs = 0
 function verifier(intitule, condition, detail = '') {
@@ -155,6 +156,57 @@ verifier(
   'un appoint plus éloigné que la scène ne donne pas de retard négatif',
   retardDAppoint(10, 40) === 0
 )
+
+console.log('\n=== Carte de couverture ===')
+
+const salle = { largeur: 10, profondeur: 12, hauteurOreilles: 1.2 }
+const uneEnceinte = {
+  nom: 'Centre',
+  position: { x: 5, y: 0, z: 3 },
+  visee: { x: 5, y: 12, z: 1.2 },
+  niveau1m: 100,
+  ouverture: { 1000: 90 }
+}
+
+const carte = calculerCarte(salle, [uneEnceinte], 1000, 0.5)
+verifier(
+  'la grille a la taille de la salle',
+  carte.niveaux.length === 24 && carte.niveaux[0].length === 20,
+  `${carte.niveaux.length} x ${carte.niveaux[0].length}`
+)
+verifier('aucun point ne vaut l’infini', carte.niveaux.every((l) => l.every(Number.isFinite)))
+verifier('le niveau baisse quand on s’éloigne', carte.niveaux[0][10] > carte.niveaux[23][10])
+verifier(
+  'les statistiques sont cohérentes',
+  carte.minimum <= carte.moyenne &&
+    carte.moyenne <= carte.maximum &&
+    proche(carte.ecart, carte.maximum - carte.minimum)
+)
+
+// Le point qui décidera du conseil de placement : reculer une enceinte trop
+// proche du premier rang rend la couverture plus régulière.
+const reculee = calculerCarte(salle, [{ ...uneEnceinte, position: { x: 5, y: -4, z: 3 } }], 1000, 0.5)
+verifier(
+  'une enceinte reculée donne une couverture plus régulière',
+  reculee.ecart < carte.ecart,
+  `${reculee.ecart.toFixed(1)} dB contre ${carte.ecart.toFixed(1)} dB`
+)
+
+let refusPas = null
+try {
+  calculerCarte(salle, [uneEnceinte], 1000, 0)
+} catch (erreur) {
+  refusPas = erreur.message
+}
+verifier('un pas nul est refusé', refusPas !== null, refusPas ?? 'aucune erreur')
+
+let refusSansEnceinte = null
+try {
+  calculerCarte(salle, [], 1000)
+} catch (erreur) {
+  refusSansEnceinte = erreur.message
+}
+verifier('une carte sans enceinte est refusée', refusSansEnceinte !== null)
 
 console.log(echecs === 0 ? '\nACOUSTIQUE : TOUS LES TESTS PASSENT' : `\n${echecs} TEST(S) EN ECHEC`)
 process.exitCode = echecs === 0 ? 0 : 1

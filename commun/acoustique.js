@@ -6,8 +6,13 @@
  * calculé ici est donc vérifié contre des valeurs connues à la main, avant
  * qu'on affiche quoi que ce soit.
  *
- * Ce fichier ne dépend de rien : ni interface, ni fichier de projet. Node 24
- * l'exécute tel quel, sans compilation.
+ * Ce fichier ne dépend de rien : ni interface, ni fichier de projet.
+ *
+ * **Écrit en JavaScript, types en JSDoc**, comme le calcul DMX de Scenika et
+ * pour la même raison : il doit tourner dans un navigateur (la carte), dans
+ * Node (les tests) et plus tard dans l'application. Une formule qui a besoin
+ * d'être compilée pour atteindre l'un des trois finit dupliquée le jour où
+ * l'outil gêne.
  *
  * **Ce que ce module ne fait pas encore**, et qu'il ne faut pas laisser croire :
  * il ignore les réflexions sur les parois, la réverbération, et la directivité
@@ -17,15 +22,14 @@
  */
 
 /** Bandes d'octave retenues, en hertz. */
-export const BANDES_OCTAVE = [125, 250, 500, 1000, 2000, 4000, 8000] as const
+export const BANDES_OCTAVE = [125, 250, 500, 1000, 2000, 4000, 8000]
 
-export type BandeOctave = (typeof BANDES_OCTAVE)[number]
-
-export interface Point {
-  x: number
-  y: number
-  z: number
-}
+/**
+ * @typedef {object} Point
+ * @property {number} x
+ * @property {number} y
+ * @property {number} z
+ */
 
 /**
  * Célérité du son dans l'air, en mètres par seconde.
@@ -34,12 +38,21 @@ export interface Point {
  * pleine monte facilement à 25 °C, ce qui déplace les retards de près de 1 %.
  * Autant le calculer plutôt que de figer 343.
  */
-export function celeriteSon(temperatureCelsius = 20): number {
+/**
+ * @param {number} [temperatureCelsius]
+ * @returns {number}
+ */
+export function celeriteSon(temperatureCelsius = 20) {
   return 331.3 * Math.sqrt(1 + temperatureCelsius / 273.15)
 }
 
 /** Distance entre deux points, en mètres. */
-export function distance(a: Point, b: Point): number {
+/**
+ * @param {Point} a
+ * @param {Point} b
+ * @returns {number}
+ */
+export function distance(a, b) {
   return Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z)
 }
 
@@ -47,7 +60,12 @@ export function distance(a: Point, b: Point): number {
  * Retard de propagation, en millisecondes.
  * Environ 2,9 ms par mètre à 20 °C — le chiffre que tout technicien connaît.
  */
-export function retardMs(distanceMetres: number, temperatureCelsius = 20): number {
+/**
+ * @param {number} distanceMetres
+ * @param {number} [temperatureCelsius]
+ * @returns {number}
+ */
+export function retardMs(distanceMetres, temperatureCelsius = 20) {
   if (distanceMetres < 0) throw new Error('Une distance ne peut pas être négative.')
   return (distanceMetres / celeriteSon(temperatureCelsius)) * 1000
 }
@@ -69,11 +87,13 @@ export const DISTANCE_MINIMALE = 0.1
  * distance double. `niveauReference` est mesuré à `distanceReference`, un mètre
  * par convention pour la sensibilité d'une enceinte.
  */
-export function niveauADistance(
-  niveauReference: number,
-  distanceMetres: number,
-  distanceReference = 1
-): number {
+/**
+ * @param {number} niveauReference
+ * @param {number} distanceMetres
+ * @param {number} [distanceReference]
+ * @returns {number}
+ */
+export function niveauADistance(niveauReference, distanceMetres, distanceReference = 1) {
   if (distanceReference <= 0) {
     throw new Error('La distance de référence doit être supérieure à zéro.')
   }
@@ -90,7 +110,11 @@ export function niveauADistance(
  * n'est pas modélisé, l'interface doit le dire au lieu de laisser croire à une
  * précision qu'on n'a pas.
  */
-export function additionnerNiveaux(niveaux: number[]): number {
+/**
+ * @param {number[]} niveaux
+ * @returns {number}
+ */
+export function additionnerNiveaux(niveaux) {
   if (niveaux.length === 0) return -Infinity
   const somme = niveaux.reduce((total, niveau) => total + 10 ** (niveau / 10), 0)
   return 10 * Math.log10(somme)
@@ -108,7 +132,12 @@ export function additionnerNiveaux(niveaux: number[]): number {
  * l'aigu et quasi omnidirectionnelle dans le grave. C'est pourquoi l'ouverture
  * est un paramètre par bande, et non une constante par enceinte.
  */
-export function attenuationAngulaire(angleDegres: number, ouvertureDegres: number): number {
+/**
+ * @param {number} angleDegres
+ * @param {number} ouvertureDegres
+ * @returns {number}
+ */
+export function attenuationAngulaire(angleDegres, ouvertureDegres) {
   if (ouvertureDegres <= 0) {
     throw new Error("L'angle d'ouverture doit être supérieur à zéro.")
   }
@@ -119,7 +148,13 @@ export function attenuationAngulaire(angleDegres: number, ouvertureDegres: numbe
 }
 
 /** Angle entre l'axe d'une enceinte et un point, en degrés. */
-export function angleDepuisAxe(source: Point, axe: Point, cible: Point): number {
+/**
+ * @param {Point} source
+ * @param {Point} axe
+ * @param {Point} cible
+ * @returns {number}
+ */
+export function angleDepuisAxe(source, axe, cible) {
   const vecteurAxe = { x: axe.x - source.x, y: axe.y - source.y, z: axe.z - source.z }
   const vecteurCible = { x: cible.x - source.x, y: cible.y - source.y, z: cible.z - source.z }
 
@@ -134,24 +169,28 @@ export function angleDepuisAxe(source: Point, axe: Point, cible: Point): number 
   return (Math.acos(cosinus) * 180) / Math.PI
 }
 
-export interface Enceinte {
-  nom: string
-  position: Point
-  /** Un point vers lequel l'enceinte est dirigée. */
-  visee: Point
-  /** Niveau à un mètre dans l'axe, en dB. */
-  niveau1m: number
-  /** Ouverture à −6 dB, en degrés, par bande d'octave. */
-  ouverture: Record<number, number>
-  /** Retard appliqué à cette enceinte, en millisecondes. */
-  retardMs?: number
-}
+/**
+ * @typedef {object} Enceinte
+ * @property {string} nom
+ * @property {Point} position
+ * @property {Point} visee Un point vers lequel l'enceinte est dirigée.
+ * @property {number} niveau1m Niveau à un mètre dans l'axe, en dB.
+ * @property {Record<number, number>} ouverture Ouverture à −6 dB, en degrés,
+ *   par bande d'octave.
+ * @property {number} [retardMs] Retard appliqué à cette enceinte, en ms.
+ */
 
 /**
  * Niveau produit par une enceinte en un point, pour une bande donnée.
  * Champ direct seulement : ni réflexion, ni absorption de l'air.
  */
-export function niveauEnUnPoint(enceinte: Enceinte, cible: Point, bande: number): number {
+/**
+ * @param {Enceinte} enceinte
+ * @param {Point} cible
+ * @param {number} bande
+ * @returns {number}
+ */
+export function niveauEnUnPoint(enceinte, cible, bande) {
   const ouverture = enceinte.ouverture[bande]
   if (ouverture === undefined) {
     throw new Error(
@@ -165,7 +204,13 @@ export function niveauEnUnPoint(enceinte: Enceinte, cible: Point, bande: number)
 }
 
 /** Niveau total de plusieurs enceintes en un point, pour une bande donnée. */
-export function niveauTotal(enceintes: Enceinte[], cible: Point, bande: number): number {
+/**
+ * @param {Enceinte[]} enceintes
+ * @param {Point} cible
+ * @param {number} bande
+ * @returns {number}
+ */
+export function niveauTotal(enceintes, cible, bande) {
   return additionnerNiveaux(enceintes.map((e) => niveauEnUnPoint(e, cible, bande)))
 }
 
@@ -178,12 +223,19 @@ export function niveauTotal(enceintes: Enceinte[], cible: Point, bande: number):
  * entend le renfort et non la scène, ce qui est exactement ce qu'on cherche à
  * éviter en posant un rappel.
  */
+/**
+ * @param {number} distancePrincipale
+ * @param {number} distanceAppoint
+ * @param {number} [margeMs]
+ * @param {number} [temperatureCelsius]
+ * @returns {number}
+ */
 export function retardDAppoint(
-  distancePrincipale: number,
-  distanceAppoint: number,
+  distancePrincipale,
+  distanceAppoint,
   margeMs = 10,
   temperatureCelsius = 20
-): number {
+) {
   const retard =
     retardMs(distancePrincipale, temperatureCelsius) -
     retardMs(distanceAppoint, temperatureCelsius) +
@@ -191,4 +243,88 @@ export function retardDAppoint(
   // Un retard négatif n'a pas de sens : l'appoint est alors plus loin que la
   // source principale, et c'est la marge seule qui s'applique.
   return Math.max(0, retard)
+}
+
+/* ── La carte de couverture ──────────────────────────────────────────────── */
+
+/**
+ * Une salle rectangulaire, vue du dessus. Le premier objet réaliste d'Acustika.
+ * @typedef {object} Salle
+ * @property {number} largeur En mètres, selon x.
+ * @property {number} profondeur En mètres, selon y.
+ * @property {number} hauteurOreilles Hauteur du plan de calcul, en mètres.
+ */
+
+/**
+ * @typedef {object} Carte
+ * @property {number[][]} niveaux Grille des niveaux en dB, lignes selon y.
+ * @property {number} pas Distance entre deux points, en mètres.
+ * @property {number} minimum
+ * @property {number} maximum
+ * @property {number} moyenne
+ * @property {number} ecart Écart entre le point le plus fort et le plus faible.
+ */
+
+/**
+ * Calcule la couverture sur un plan horizontal, à hauteur d'oreilles.
+ *
+ * **Le calcul vit ici, pas dans la page qui l'affiche.** Une carte de couleurs
+ * est très convaincante même quand elle est fausse : la seule protection est
+ * que le calcul soit au même endroit que ses vérifications.
+ *
+ * `ecart` est la mesure qui comptera pour le conseil de placement : une bonne
+ * couverture n'est pas une couverture forte, c'est une couverture **régulière**.
+ *
+ * @param {Salle} salle
+ * @param {Enceinte[]} enceintes
+ * @param {number} bande
+ * @param {number} [pas] Résolution en mètres. 0,5 m suffit à l'œil.
+ * @returns {Carte}
+ */
+export function calculerCarte(salle, enceintes, bande, pas = 0.5) {
+  if (pas <= 0) throw new Error('Le pas de la grille doit être supérieur à zéro.')
+  if (salle.largeur <= 0 || salle.profondeur <= 0) {
+    throw new Error('Les dimensions de la salle doivent être supérieures à zéro.')
+  }
+  if (enceintes.length === 0) throw new Error('Il faut au moins une enceinte.')
+
+  const colonnes = Math.max(1, Math.round(salle.largeur / pas))
+  const lignes = Math.max(1, Math.round(salle.profondeur / pas))
+
+  /** @type {number[][]} */
+  const niveaux = []
+  let minimum = Infinity
+  let maximum = -Infinity
+  let somme = 0
+  let nombre = 0
+
+  for (let j = 0; j < lignes; j += 1) {
+    /** @type {number[]} */
+    const ligne = []
+    for (let i = 0; i < colonnes; i += 1) {
+      // Le centre de la case, pas son coin : un point pile sur le mur ou sur
+      // une enceinte fausserait les extrêmes de l'échelle.
+      const cible = {
+        x: (i + 0.5) * pas,
+        y: (j + 0.5) * pas,
+        z: salle.hauteurOreilles
+      }
+      const niveau = niveauTotal(enceintes, cible, bande)
+      ligne.push(niveau)
+      if (niveau < minimum) minimum = niveau
+      if (niveau > maximum) maximum = niveau
+      somme += niveau
+      nombre += 1
+    }
+    niveaux.push(ligne)
+  }
+
+  return {
+    niveaux,
+    pas,
+    minimum,
+    maximum,
+    moyenne: somme / nombre,
+    ecart: maximum - minimum
+  }
 }

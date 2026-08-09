@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Carte de couverture — Acustika</title>
+    <style>
+      /* Dégradé d'Acustika : violet clair → violet profond. */
+      :root {
+        --clair: #b58cff;
+        --profond: #6d4ae0;
+        --fond: #0f0d16;
+        --carte: #191527;
+        --trait: #2f2942;
+        --texte: #efeaf8;
+        --discret: #9a91b4;
+        --ambre: #ffc961;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--fond);
+        color: var(--texte);
+        font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+
+      main {
+        max-width: 64rem;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 4rem;
+      }
+
+      h1 {
+        font-size: 1.6rem;
+        margin: 0 0 0.3rem;
+        background: linear-gradient(90deg, var(--clair), var(--profond));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .sous-titre {
+        color: var(--discret);
+        margin: 0 0 1.6rem;
+      }
+
+      .colonnes {
+        display: grid;
+        grid-template-columns: minmax(16rem, 22rem) 1fr;
+        gap: 1.2rem;
+        align-items: start;
+      }
+
+      @media (max-width: 46rem) {
+        .colonnes {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .bloc {
+        background: var(--carte);
+        border: 1px solid var(--trait);
+        border-radius: 10px;
+        padding: 1.1rem;
+        margin-bottom: 1.2rem;
+      }
+
+      h2 {
+        font-size: 1rem;
+        margin: 0 0 0.9rem;
+      }
+
+      .champs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
+      }
+
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-size: 0.82rem;
+        color: var(--discret);
+      }
+
+      input,
+      select {
+        background: #0b0912;
+        border: 1px solid var(--trait);
+        border-radius: 6px;
+        color: var(--texte);
+        padding: 0.45rem 0.55rem;
+        font: inherit;
+        width: 100%;
+      }
+
+      input:focus,
+      select:focus {
+        outline: 2px solid var(--clair);
+        outline-offset: 1px;
+      }
+
+      canvas {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        border: 1px solid var(--trait);
+        background: #0b0912;
+        display: block;
+      }
+
+      .chiffres {
+        display: flex;
+        gap: 1.4rem;
+        flex-wrap: wrap;
+        margin-top: 0.9rem;
+      }
+
+      .chiffre strong {
+        display: block;
+        font-size: 1.25rem;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .chiffre span {
+        color: var(--discret);
+        font-size: 0.8rem;
+      }
+
+      .echelle {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-top: 0.8rem;
+        font-size: 0.8rem;
+        color: var(--discret);
+      }
+
+      .bande {
+        flex: 1;
+        height: 12px;
+        border-radius: 6px;
+      }
+
+      .avertissement {
+        border-left: 3px solid var(--ambre);
+        padding: 0.6rem 0.8rem;
+        background: rgba(255, 201, 97, 0.08);
+        border-radius: 0 6px 6px 0;
+        font-size: 0.9rem;
+      }
+
+      .avertissement strong {
+        color: var(--ambre);
+      }
+
+      footer {
+        color: var(--discret);
+        font-size: 0.85rem;
+        border-top: 1px solid var(--trait);
+        padding-top: 1rem;
+        margin-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Carte de couverture</h1>
+      <p class="sous-titre">
+        Une salle rectangulaire, une ou deux enceintes, vue du dessus à hauteur d'oreilles.
+      </p>
+
+      <div class="colonnes">
+        <div>
+          <section class="bloc">
+            <h2>La salle</h2>
+            <div class="champs">
+              <label>Largeur (m)<input id="largeur" type="number" value="12" min="1" step="0.5" /></label>
+              <label>Profondeur (m)<input id="profondeur" type="number" value="18" min="1" step="0.5" /></label>
+              <label>Hauteur d'oreilles (m)<input id="oreilles" type="number" value="1.2" min="0" step="0.1" /></label>
+              <label>
+                Bande
+                <select id="bande">
+                  <option>125</option>
+                  <option>250</option>
+                  <option>500</option>
+                  <option selected>1000</option>
+                  <option>2000</option>
+                  <option>4000</option>
+                  <option>8000</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section class="bloc">
+            <h2>Enceintes</h2>
+            <div class="champs">
+              <label>Niveau à 1 m (dB)<input id="niveau" type="number" value="100" step="1" /></label>
+              <label>Hauteur (m)<input id="hauteur" type="number" value="3" min="0" step="0.1" /></label>
+              <label>Écartement (m)<input id="ecartement" type="number" value="6" min="0" step="0.5" /></label>
+              <label>Recul (m)<input id="recul" type="number" value="0" step="0.5" /></label>
+              <label>
+                Nombre
+                <select id="nombre">
+                  <option value="1">Une, au centre</option>
+                  <option value="2" selected>Deux, en stéréo</option>
+                </select>
+              </label>
+              <label>Ouverture à −6 dB (°)<input id="ouverture" type="number" value="90" min="10" max="360" step="5" /></label>
+            </div>
+          </section>
+        </div>
+
+        <div>
+          <section class="bloc">
+            <h2>Vue du dessus</h2>
+            <canvas id="carte" width="600" height="900" aria-label="Carte de couverture"></canvas>
+
+            <div class="echelle">
+              <span id="bas">—</span>
+              <div class="bande" id="degrade"></div>
+              <span id="haut">—</span>
+            </div>
+
+            <div class="chiffres">
+              <div class="chiffre"><strong id="ecart">—</strong><span>écart max−min</span></div>
+              <div class="chiffre"><strong id="moyenne">—</strong><span>moyenne</span></div>
+              <div class="chiffre"><strong id="maximum">—</strong><span>maximum</span></div>
+              <div class="chiffre"><strong id="minimum">—</strong><span>minimum</span></div>
+            </div>
+
+            <p id="erreur" class="avertissement" hidden></p>
+          </section>
+
+          <p class="avertissement">
+            <strong>Ce que cette carte ne montre pas.</strong> Elle calcule le
+            <em>champ direct</em> : ni réflexions sur les murs, ni réverbération, ni déphasage
+            entre enceintes. Deux enceintes y ajoutent 3 dB là où, en vrai, elles peuvent
+            s'ajouter jusqu'à 6 dB ou s'annuler. Elle sert à comparer des placements, pas à
+            promettre un résultat.
+          </p>
+        </div>
+      </div>
+
+      <footer>
+        <p>
+          <strong>Acustika</strong>. Ce qui compte pour un placement n'est pas le niveau le plus
+          fort, c'est l'<strong>écart</strong> entre le premier et le dernier rang : plus il est
+          petit, plus la salle entend la même chose.
+        </p>
+      </footer>
+    </main>
+
+    <script type="module">
+      // Le calcul vient du module partagé, vérifié par les tests contre des
+      // valeurs connues à la main. Cette page ne fait que dessiner : une carte
+      // de couleurs est très convaincante même quand elle est fausse, et la
+      // seule protection est que le calcul ne vive pas ici.
+      import { calculerCarte } from '../commun/acoustique.js'
+
+      const $ = (id) => document.getElementById(id)
+      const toile = $('carte')
+      const pinceau = toile.getContext('2d')
+
+      // Échelle de couleurs : violet sombre (faible) → ambre (fort). Continue,
+      // pour ne pas inventer des frontières nettes que la physique n'a pas.
+      const COULEURS = [
+        [26, 20, 48],
+        [80, 52, 168],
+        [140, 96, 220],
+        [230, 160, 170],
+        [255, 201, 97]
+      ]
+
+      function couleur(fraction) {
+        const t = Math.min(1, Math.max(0, fraction)) * (COULEURS.length - 1)
+        const i = Math.min(COULEURS.length - 2, Math.floor(t))
+        const reste = t - i
+        const [r1, v1, b1] = COULEURS[i]
+        const [r2, v2, b2] = COULEURS[i + 1]
+        return [
+          Math.round(r1 + (r2 - r1) * reste),
+          Math.round(v1 + (v2 - v1) * reste),
+          Math.round(b1 + (b2 - b1) * reste)
+        ]
+      }
+
+      $('degrade').style.background = `linear-gradient(90deg, ${COULEURS.map(
+        ([r, v, b]) => `rgb(${r},${v},${b})`
+      ).join(',')})`
+
+      function lire(id) {
+        return Number($(id).value)
+      }
+
+      function dessiner() {
+        const salle = {
+          largeur: lire('largeur'),
+          profondeur: lire('profondeur'),
+          hauteurOreilles: lire('oreilles')
+        }
+        const bande = lire('bande')
+        const ouverture = lire('ouverture')
+        const nombre = lire('nombre')
+        const ecartement = lire('ecartement')
+        const recul = lire('recul')
+        const hauteur = lire('hauteur')
+        const niveau1m = lire('niveau')
+
+        const centre = salle.largeur / 2
+        const positions =
+          nombre === 1 ? [centre] : [centre - ecartement / 2, centre + ecartement / 2]
+
+        const enceintes = positions.map((x, index) => ({
+          nom: nombre === 1 ? 'Centre' : index === 0 ? 'Gauche' : 'Droite',
+          position: { x, y: -recul, z: hauteur },
+          // Visée vers le fond de la salle, à hauteur d'oreilles.
+          visee: { x: centre, y: salle.profondeur * 0.7, z: salle.hauteurOreilles },
+          niveau1m,
+          ouverture: { [bande]: ouverture }
+        }))
+
+        let carte
+        try {
+          carte = calculerCarte(salle, enceintes, bande, 0.25)
+        } catch (erreur) {
+          $('erreur').hidden = false
+          $('erreur').textContent = erreur.message
+          return
+        }
+        $('erreur').hidden = true
+
+        const lignes = carte.niveaux.length
+        const colonnes = carte.niveaux[0].length
+        toile.width = colonnes
+        toile.height = lignes
+        toile.style.aspectRatio = `${salle.largeur} / ${salle.profondeur}`
+
+        const image = pinceau.createImageData(colonnes, lignes)
+        // L'échelle couvre 24 dB sous le maximum : au-delà, l'oreille considère
+        // que ce n'est plus la même sonorisation.
+        const bas = carte.maximum - 24
+
+        for (let j = 0; j < lignes; j += 1) {
+          for (let i = 0; i < colonnes; i += 1) {
+            const [r, v, b] = couleur((carte.niveaux[j][i] - bas) / 24)
+            const position = (j * colonnes + i) * 4
+            image.data[position] = r
+            image.data[position + 1] = v
+            image.data[position + 2] = b
+            image.data[position + 3] = 255
+          }
+        }
+        pinceau.putImageData(image, 0, 0)
+
+        // Les enceintes, repérées sur la carte. Une enceinte reculée est hors
+        // de la salle : on la ramène sur le bord pour qu'elle reste visible.
+        pinceau.fillStyle = '#ffffff'
+        for (const enceinte of enceintes) {
+          const x = (enceinte.position.x / salle.largeur) * colonnes
+          const y = Math.max(1.5, (enceinte.position.y / salle.profondeur) * lignes)
+          pinceau.beginPath()
+          pinceau.arc(x, y, Math.max(2, colonnes / 90), 0, Math.PI * 2)
+          pinceau.fill()
+        }
+
+        $('bas').textContent = `${bas.toFixed(0)} dB`
+        $('haut').textContent = `${carte.maximum.toFixed(0)} dB`
+        $('ecart').textContent = `${carte.ecart.toFixed(1)} dB`
+        $('moyenne').textContent = `${carte.moyenne.toFixed(1)} dB`
+        $('maximum').textContent = `${carte.maximum.toFixed(1)} dB`
+        $('minimum').textContent = `${carte.minimum.toFixed(1)} dB`
+      }
+
+      for (const champ of document.querySelectorAll('input, select')) {
+        champ.addEventListener('input', dessiner)
+      }
+      dessiner()
+    </script>
+  </body>
+</html>

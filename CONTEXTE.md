@@ -4,16 +4,20 @@
 > La vue d'ensemble des trois applications est dans [../LISEZ-MOI.md](../LISEZ-MOI.md).
 > Ce fichier-ci ne concerne qu'Acustika.
 
-**État : la physique de base est écrite et vérifiée. Rien d'autre.** Ni
-interface, ni lecture de fichiers d'enceintes. Ce document décrit ce qui a été
+**État : la physique est écrite et vérifiée, et la carte de couverture
+s'affiche.** L'application Electron n'est pas encore commencée ; la carte vit
+pour l'instant dans une page (`site/carte-couverture.html`) qui servira de base
+à l'écran de l'application. Ce document décrit ce qui a été
 décidé, ce qui est réaliste, et surtout ce qui ne l'est pas.
 
 ```bash
 cd Acustika && npm test     # aucune installation nécessaire
 ```
 
-`commun/acoustique.ts` ne dépend de rien. **Node 24 exécute le TypeScript tel
-quel**, donc pas de `npm install` ni d'outil de compilation.
+`commun/acoustique.js` ne dépend de rien. **Écrit en JavaScript avec les types
+en JSDoc**, comme le calcul DMX de Scenika et pour la même raison : il doit
+tourner dans un navigateur, dans Node et dans l'application. Une formule qui a
+besoin d'être compilée pour atteindre l'un des trois finit dupliquée.
 
 C'est l'étape 2 de la section 7 qui est faite — délibérément avant l'étape 1
 (trouver des fichiers CLF), parce qu'elle n'en dépend pas et qu'elle demande,
@@ -29,11 +33,21 @@ d'appoint avec la marge qui garde la localisation sur la scène.
 sur une enceinte est ramené à 10 cm. Sans cela, une seule case infinie ferait
 basculer toute l'échelle de couleurs de la carte.
 
+S'y ajoute `calculerCarte()` : la grille de niveaux sur un plan horizontal,
+avec minimum, maximum, moyenne et surtout **écart**. C'est l'écart qui décidera
+du conseil de placement — une bonne couverture n'est pas une couverture forte,
+c'est une couverture régulière. Un test le montre déjà : reculer une enceinte
+trop proche du premier rang fait tomber l'écart de 21,6 à 10,9 dB.
+
+**Le calcul vit dans le module, jamais dans la page qui l'affiche.** Une carte
+de couleurs est très convaincante même quand elle est fausse : la seule
+protection est que le calcul soit au même endroit que ses vérifications.
+
 **Ce que le module ne fait pas, et qu'il ne faut pas laisser croire** : ni
 réflexions, ni réverbération, ni déphasage entre sources. Il calcule un champ
 direct. L'addition suppose des sources décorrélées ; deux sources cohérentes
-peuvent en réalité s'ajouter jusqu'à +6 dB ou s'annuler. L'interface devra le
-dire.
+peuvent en réalité s'ajouter jusqu'à +6 dB ou s'annuler. **La page le dit
+explicitement à l'écran**, et l'application devra continuer de le dire.
 
 ---
 
