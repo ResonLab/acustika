@@ -1,0 +1,10 @@
+{
+  "name": "acustika",
+  "version": "0.0.0",
+  "description": "Acustika - simulation acoustique et conseil de placement",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/acoustique.mjs"
+  }
+}
