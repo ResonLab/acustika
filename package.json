@@ -2,6 +2,8 @@
   "name": "acustika",
   "version": "0.1.0",
   "description": "Acustika - simulation acoustique et conseil de placement",
+  "author": "Colin Meng",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
