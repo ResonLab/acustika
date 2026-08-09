@@ -1,0 +1,57 @@
+# Publie le site d Acustika sur GitHub Pages.
+#
+# Pourquoi un workflow plutot que « servir docs/ » directement : la page du
+# carte de couverture importe la physique, qui vit dans commun/, hors de docs/, parce
+# qu'elle tourne aussi dans l'application et dans les tests. On ne recopie pas la
+# formule dans le depot — elle vit a un seul endroit — donc la copie est faite
+# ici, au moment de publier.
+name: Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'commun/acoustique.js'
+      - 'scripts/preparer-site.mjs'
+      - '.github/workflows/site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Une seule publication a la fois, et on laisse finir celle qui est en cours.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Le site ne doit pas partir si la carte ne trouve plus sa physique
+      # ou si les deux langues ont divergé.
+      - name: Verifier le site
+        run: node tests/coherence-site.mjs
+
+      - name: Preparer le site
+        run: node scripts/preparer-site.mjs
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deploiement
+        uses: actions/deploy-pages@v4

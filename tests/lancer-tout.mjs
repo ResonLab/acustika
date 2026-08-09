@@ -6,7 +6,8 @@ const DOSSIER = dirname(fileURLToPath(import.meta.url))
 
 const SUITES = [
   ['Physique et couverture', 'acoustique.mjs'],
-  ['Application', 'application.mjs']
+  ['Application', 'application.mjs'],
+  ['Cohérence du site', 'coherence-site.mjs']
 ]
 
 let echecs = 0
