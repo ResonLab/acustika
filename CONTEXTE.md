@@ -164,17 +164,45 @@ contraire.
 Par ordre de valeur. Les trois premiers points sont communs aux applications de
 la maison : **regarder comment Ohmnia les a résolus avant de recommencer**.
 
-### 1. Le site de l'application
+### 1. Le site de l'application — **fait**
 
-Dans la **même direction artistique** que `APP/docs/index.html` et
-`Site/index.html` : aurores animées en fond, révélation au défilement, boutons à
-balayage lumineux, barre de progression, bascule clair/sombre mémorisée,
-transitions de page. Une même maison doit se reconnaître d'un site à l'autre.
-Reprendre le CSS de `Site/index.html`, changer le dégradé.
+En ligne sur <https://resonlab.github.io/acustika/>, en français et en anglais
+(`docs/en/`). **Le CSS est repris tel quel de celui de Scenika, seule la palette
+change** : un correctif de mise en forme ne doit pas s'appliquer à un seul site.
+La clé de thème `resonlab-theme` est commune à toute la maison.
 
-### 2. Français et anglais
+Une section entière dit **ce que la simulation ne fait pas** — ni réflexions, ni
+réverbération, ni déphasage, ni lancer de rayons. Ce n'est pas une note en bas de
+page : une carte de couleurs est très convaincante même quand elle est fausse.
 
-Les sites **et** l'application. Ohmnia a l'infrastructure dans
+**`site/` est devenu `docs/`** : GitHub Pages ne sert que la racine du dépôt ou
+`docs/`.
+
+**Le piège, déjà payé sur Scenika, à ne pas réintroduire.** `carte-couverture.html`
+importait `../commun/acoustique.js`. Servie par Pages depuis `docs/`, la page
+remontait au-dessus de la racine servie : elle se serait affichée normalement et
+**la carte aurait été morte**. En local, rien ne l'aurait montré. L'import vise
+maintenant `./commun/acoustique.js`, et `npm run site:preparer` y dépose une
+copie, **ignorée par git** — la physique vit à un seul endroit.
+`.github/workflows/site.yml` refait la copie à chaque publication, après avoir
+passé `tests/coherence-site.mjs`.
+
+**La page anglaise est fabriquée depuis la française par substitutions
+explicites**, CSS et JavaScript inchangés. `tests/coherence-site.mjs` compare les
+structures et **refuse que le CSS diverge**. Vérifié en le cassant : une carte
+ajoutée d'un seul côté fait échouer la suite.
+
+*Non vérifié : la carte n'a pas été exécutée dans un navigateur sur l'adresse
+publique — le domaine est bloqué depuis l'outil de navigation. Ce qui est
+vérifié : les pages répondent en 200 et le module servi est identique octet pour
+octet à `commun/acoustique.js`.*
+
+### 2. Français et anglais — le site est fait, **l'application non**
+
+Le site est bilingue (point 1). **L'application n'a rien** : pas d'`i18n.ts`, pas
+de sélecteur de langue, tout le texte des écrans en français en dur.
+
+Ohmnia a l'infrastructure dans
 `APP/src/shared/i18n.ts` : un objet `TEXTES`, une clé préfixée par écran, et
 `npm run typecheck` rejette les clés inconnues. **Reprendre ce mécanisme, pas en
 inventer un autre.** Les messages d'erreur du main process devront aussi y
