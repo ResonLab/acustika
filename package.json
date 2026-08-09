@@ -1,6 +1,6 @@
 {
   "name": "acustika",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Acustika - simulation acoustique et conseil de placement",
   "private": true,
   "type": "module",
@@ -9,7 +9,11 @@
     "build": "electron-vite build",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "node tests/lancer-tout.mjs",
-    "verifier": "npm run typecheck && npm test"
+    "verifier": "npm run typecheck && npm test",
+    "package:win": "electron-vite build && electron-builder --win --publish never",
+    "publish:win": "electron-vite build && electron-builder --win --publish always",
+    "package:linux": "electron-vite build && electron-builder --linux --publish never",
+    "publish:linux": "electron-vite build && electron-builder --linux --publish always"
   },
   "main": "./out/main/index.js",
   "devDependencies": {
@@ -20,7 +24,8 @@
     "electron": "^43.2.0",
     "electron-vite": "^5.0.0",
     "typescript": "^5.9.2",
-    "vite": "^7.3.6"
+    "vite": "^7.3.6",
+    "electron-builder": "^26.15.3"
   },
   "dependencies": {
     "react": "^19.2.0",
