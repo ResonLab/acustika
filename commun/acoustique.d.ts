@@ -92,3 +92,36 @@ export function couvertureSalle(
   bande: number,
   pas?: number
 ): { zones: CouvertureZone[]; minimum: number; maximum: number; ecart: number }
+
+export interface Reglage {
+  hauteur: number
+  ecartement: number
+  distanceVisee: number
+}
+
+export interface Effet {
+  reglage: 'hauteur' | 'ecartement' | 'distanceVisee'
+  depuis: number
+  vers: number
+  ecartSeul: number
+  gain: number
+}
+
+export interface Conseil {
+  actuel: Reglage
+  propose: Reglage
+  ecartActuel: number
+  ecartPropose: number
+  gain: number
+  essais: number
+  effets: Effet[]
+}
+
+export function reglageActuel(enceintes: Enceinte[]): Reglage
+export function appliquerReglage(enceintes: Enceinte[], reglage: Reglage): Enceinte[]
+export function conseillerPlacement(
+  zones: Zone[],
+  enceintes: Enceinte[],
+  bande: number,
+  pas?: number
+): Conseil

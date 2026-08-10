@@ -7,6 +7,9 @@
 import {
   additionnerNiveaux,
   altitudeDuSol,
+  appliquerReglage,
+  BANDES_OCTAVE,
+  conseillerPlacement,
   calculerCarte,
   couvertureSalle,
   couvertureZone,
@@ -29,6 +32,21 @@ function verifier(intitule, condition, detail = '') {
   if (!condition) echecs += 1
   console.log(`  ${condition ? 'OK  ' : 'ECHEC'} ${intitule}`)
   if (!condition && detail) console.log(`        ${detail}`)
+}
+
+/** Vérifie qu'un appel est refusé, et que le message dit bien quoi. */
+function refuseAvec(intitule, action, extrait) {
+  let message = null
+  try {
+    action()
+  } catch (erreur) {
+    message = erreur.message
+  }
+  verifier(
+    intitule,
+    message !== null && message.includes(extrait),
+    message ?? 'aucune erreur levée'
+  )
 }
 
 const proche = (obtenu, attendu, tolerance = 0.01) => Math.abs(obtenu - attendu) <= tolerance
@@ -340,6 +358,117 @@ try {
   refusVide = erreur.message
 }
 verifier('une salle sans zone est refusée', refusVide !== null)
+
+
+console.log('\n=== Le conseil de placement ===')
+
+// Une salle profonde avec une enceinte posée trop bas et trop près : le cas
+// que le conseil doit savoir redresser. Le premier rang est écrasé, le fond
+// n'a plus rien — c'est exactement l'écart qu'on cherche à réduire.
+const salleProfonde = [
+  {
+    nom: 'Parterre',
+    contour: [
+      { x: 0, y: 2 },
+      { x: 12, y: 2 },
+      { x: 12, y: 24 },
+      { x: 0, y: 24 }
+    ],
+    hauteurOreilles: 1.2,
+    altitude: 0,
+    pentePourcent: 0,
+    directionPenteDegres: 90
+  }
+]
+
+const ouvertureLarge = Object.fromEntries(BANDES_OCTAVE.map((b) => [b, 90]))
+const posesMal = [
+  {
+    nom: 'Gauche',
+    position: { x: 4, y: 0, z: 1.5 },
+    visee: { x: 4, y: 4, z: 1.2 },
+    niveau1m: 100,
+    ouverture: ouvertureLarge
+  },
+  {
+    nom: 'Droite',
+    position: { x: 8, y: 0, z: 1.5 },
+    visee: { x: 8, y: 4, z: 1.2 },
+    niveau1m: 100,
+    ouverture: ouvertureLarge
+  }
+]
+
+const conseil = conseillerPlacement(salleProfonde, posesMal, 1000, 1)
+
+verifier(
+  'le conseil évalue plusieurs centaines de placements',
+  conseil.essais > 100,
+  `${conseil.essais} essais`
+)
+verifier(
+  'il trouve une couverture plus régulière que le placement de départ',
+  conseil.gain > 0 && conseil.ecartPropose < conseil.ecartActuel,
+  `${conseil.ecartActuel.toFixed(1)} dB -> ${conseil.ecartPropose.toFixed(1)} dB`
+)
+
+// Le conseil doit être applicable : on recalcule la couverture avec le
+// placement proposé et on vérifie qu'on retrouve bien l'écart annoncé. Sans
+// cela, il annoncerait un chiffre qu'il ne sait pas reproduire.
+const verifie = couvertureSalle(
+  salleProfonde,
+  appliquerReglage(posesMal, conseil.propose),
+  1000,
+  1
+)
+verifier(
+  'le placement proposé donne bien l’écart annoncé',
+  Math.abs(verifie.ecart - conseil.ecartPropose) < 0.01,
+  `annoncé ${conseil.ecartPropose.toFixed(2)} · recalculé ${verifie.ecart.toFixed(2)}`
+)
+
+verifier(
+  'il explique ce que chaque réglage apporte',
+  conseil.effets.length > 0 && conseil.effets.every((e) => typeof e.gain === 'number'),
+  JSON.stringify(conseil.effets.map((e) => `${e.reglage} ${e.gain.toFixed(1)} dB`))
+)
+verifier(
+  'les explications sont classées, le plus utile en premier',
+  conseil.effets.every((e, i) => i === 0 || conseil.effets[i - 1].gain >= e.gain)
+)
+
+// Monter les enceintes doit faire partie de la réponse sur une salle profonde :
+// c'est le geste qui rapproche le fond sans écraser le premier rang.
+verifier(
+  'il conseille de monter les enceintes trop basses',
+  conseil.propose.hauteur > conseil.actuel.hauteur,
+  `${conseil.actuel.hauteur} m -> ${conseil.propose.hauteur} m`
+)
+
+// Un placement déjà bon ne doit pas être « amélioré » de force : un conseil qui
+// bouge tout à chaque fois n'inspire aucune confiance.
+const conseilDuBon = conseillerPlacement(
+  salleProfonde,
+  appliquerReglage(posesMal, conseil.propose),
+  1000,
+  1
+)
+verifier(
+  'un placement déjà bon n’est pas dégradé',
+  conseilDuBon.ecartPropose <= conseil.ecartPropose + 0.01,
+  `${conseilDuBon.ecartPropose.toFixed(2)} vs ${conseil.ecartPropose.toFixed(2)}`
+)
+
+refuseAvec(
+  'sans zone, le conseil est refusé en français',
+  () => conseillerPlacement([], posesMal, 1000),
+  'zone'
+)
+refuseAvec(
+  'sans enceinte, le conseil est refusé en français',
+  () => conseillerPlacement(salleProfonde, [], 1000),
+  'enceinte'
+)
 
 console.log(echecs === 0 ? '\nACOUSTIQUE : TOUS LES TESTS PASSENT' : `\n${echecs} TEST(S) EN ECHEC`)
 process.exitCode = echecs === 0 ? 0 : 1

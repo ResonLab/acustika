@@ -73,6 +73,58 @@ const TEXTES = {
     en: 'A zone needs at least three points.'
   },
 
+  // --- Conseil de placement ---
+  'conseil.titre': { fr: 'Conseil de placement', en: 'Placement advice' },
+  'conseil.chercher': { fr: 'Chercher un meilleur placement', en: 'Look for a better placement' },
+  'conseil.enCours': { fr: 'Recherche en cours…', en: 'Searching…' },
+  'conseil.essais': {
+    fr: '{essais} placements essayés',
+    en: '{essais} placements tried'
+  },
+  'conseil.rienDeMieux': {
+    fr: 'Le placement actuel est déjà le meilleur des {essais} essayés. Rien à changer.',
+    en: 'The current placement is already the best of the {essais} tried. Nothing to change.'
+  },
+  'conseil.gain': {
+    fr: 'L’écart tomberait de {avant} dB à {apres} dB.',
+    en: 'The spread would fall from {avant} dB to {apres} dB.'
+  },
+  'conseil.pourquoi': { fr: 'Pourquoi', en: 'Why' },
+  'conseil.effetHauteur': {
+    fr: 'Monter les enceintes de {depuis} m à {vers} m',
+    en: 'Raising the loudspeakers from {depuis} m to {vers} m'
+  },
+  'conseil.effetHauteurBaisse': {
+    fr: 'Descendre les enceintes de {depuis} m à {vers} m',
+    en: 'Lowering the loudspeakers from {depuis} m to {vers} m'
+  },
+  'conseil.effetEcartement': {
+    fr: 'Écarter les enceintes de {depuis} m à {vers} m',
+    en: 'Widening the spacing from {depuis} m to {vers} m'
+  },
+  'conseil.effetEcartementResserre': {
+    fr: 'Resserrer les enceintes de {depuis} m à {vers} m',
+    en: 'Narrowing the spacing from {depuis} m to {vers} m'
+  },
+  'conseil.effetVisee': {
+    fr: 'Viser plus loin, à {vers} m au lieu de {depuis} m',
+    en: 'Aiming further, at {vers} m instead of {depuis} m'
+  },
+  'conseil.effetViseeProche': {
+    fr: 'Viser plus près, à {vers} m au lieu de {depuis} m',
+    en: 'Aiming closer, at {vers} m instead of {depuis} m'
+  },
+  'conseil.apporte': { fr: 'à soi seul : {gain} dB', en: 'on its own: {gain} dB' },
+  'conseil.appliquer': { fr: 'Appliquer ce placement', en: 'Apply this placement' },
+  'conseil.reserve': {
+    fr: 'Une proposition, jamais une certitude : la salle réelle ne ressemble jamais au modèle. Ni murs, ni public, ni mobilier ne sont calculés.',
+    en: 'A proposal, never a certainty: the real room never looks like the model. Walls, audience and furniture are not computed.'
+  },
+  'conseil.critere': {
+    fr: 'Le critère est l’écart de niveau sur toute la salle : une salle bien couverte n’est pas une salle forte, c’est une salle où tout le monde entend la même chose.',
+    en: 'The criterion is the level spread across the whole room: a well-covered room is not a loud room, it is a room where everyone hears the same thing.'
+  },
+
   // --- Bibliothèque ---
   'biblio.nouvelle': { fr: '+ Nouvelle enceinte', en: '+ New loudspeaker' },
   'biblio.importerCsv': { fr: 'Importer un CSV…', en: 'Import a CSV…' },

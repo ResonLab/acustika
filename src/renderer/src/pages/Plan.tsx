@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { couvertureSalle } from '../../../../commun/acoustique.js'
+import {
+  appliquerReglage,
+  conseillerPlacement,
+  couvertureSalle,
+  type Conseil,
+  type Effet
+} from '../../../../commun/acoustique.js'
 import { t, traduireErreur } from '../../../partage/i18n'
 import type {
   EnceintePlacee,
@@ -51,6 +57,30 @@ function couleurNiveau(fraction: number): [number, number, number] {
 
 function identifiant(): string {
   return Math.random().toString(36).slice(2, 10)
+}
+
+/**
+ * Met un effet en phrase, dans la langue de l'interface.
+ *
+ * Le sens de la variation change le verbe — monter ou descendre, écarter ou
+ * resserrer. Dire « changer la hauteur de 1,5 m à 4 m » serait exact et
+ * inutile : ce qu'on veut lire, c'est le geste à faire.
+ */
+function decrireEffet(effet: Effet): string {
+  const depuis = effet.depuis.toFixed(1)
+  const vers = effet.vers.toFixed(1)
+  const monte = effet.vers > effet.depuis
+
+  if (effet.reglage === 'hauteur') {
+    return t(monte ? 'conseil.effetHauteur' : 'conseil.effetHauteurBaisse', { depuis, vers })
+  }
+  if (effet.reglage === 'ecartement') {
+    return t(monte ? 'conseil.effetEcartement' : 'conseil.effetEcartementResserre', {
+      depuis,
+      vers
+    })
+  }
+  return t(monte ? 'conseil.effetVisee' : 'conseil.effetViseeProche', { depuis, vers })
 }
 
 export default function Plan({
@@ -351,6 +381,72 @@ export default function Plan({
     setOutil('main')
   }
 
+  const [conseil, setConseil] = useState<Conseil | null>(null)
+  const [conseilEnCours, setConseilEnCours] = useState(false)
+
+  /**
+   * Le conseil de placement.
+   *
+   * Il n'est **pas** recalculé à chaque geste, contrairement à la carte : il
+   * essaie plusieurs centaines de placements, et le lancer tout seul figerait
+   * l'écran dès qu'on déplace une enceinte. C'est l'utilisateur qui le demande.
+   *
+   * Le calcul vit dans `commun/acoustique.js`, avec la règle qu'il applique.
+   */
+  function chercherUnMeilleurPlacement(): void {
+    setErreur('')
+    setConseilEnCours(true)
+    // Un temps mort laisse React peindre « Recherche en cours… » avant de
+    // bloquer le fil : sans lui, l'utilisateur voit l'écran se figer sans
+    // savoir pourquoi.
+    setTimeout(() => {
+      try {
+        const zones = projet.zones.map((z) => ({
+          nom: z.nom,
+          contour: z.contour,
+          hauteurOreilles: z.hauteurOreilles,
+          altitude: z.altitude,
+          pentePourcent: z.pentePourcent,
+          directionPenteDegres: z.directionPenteDegres
+        }))
+        setConseil(conseillerPlacement(zones, enceintesCalcul, projet.bande, 1))
+      } catch (e) {
+        setErreur(traduireErreur((e as Error).message))
+        setConseil(null)
+      } finally {
+        setConseilEnCours(false)
+      }
+    }, 30)
+  }
+
+  /**
+   * Applique le placement proposé aux enceintes du projet.
+   *
+   * On repasse par `appliquerReglage`, le même transformateur que le conseil a
+   * utilisé pour évaluer : appliquer autrement donnerait un placement différent
+   * de celui qui a été mesuré, et l'écart annoncé deviendrait un mensonge.
+   */
+  function appliquerLeConseil(): void {
+    if (!conseil) return
+    const transformees = appliquerReglage(enceintesCalcul, conseil.propose)
+
+    let rang = 0
+    const enceintes = projet.enceintes.map((e) => {
+      if (!e.active || !modeleParId.has(e.modeleId)) return e
+      const nouvelle = transformees[rang]
+      rang += 1
+      return {
+        ...e,
+        position: { x: nouvelle.position.x, y: nouvelle.position.y },
+        hauteur: nouvelle.position.z ?? e.hauteur,
+        visee: { x: nouvelle.visee.x, y: nouvelle.visee.y }
+      }
+    })
+
+    modifierProjet({ ...projet, enceintes })
+    setConseil(null)
+  }
+
   const enceinteSelectionnee = projet.enceintes.find((e) => e.id === selection) ?? null
 
   return (
@@ -454,6 +550,54 @@ export default function Plan({
 
           {!couverture && (
             <p className="discret">{t('plan.riendAfficher')}</p>
+          )}
+
+          {enceintesCalcul.length > 0 && projet.zones.length > 0 && (
+            <>
+              <h2>{t('conseil.titre')}</h2>
+              <p className="discret">{t('conseil.critere')}</p>
+
+              <button onClick={chercherUnMeilleurPlacement} disabled={conseilEnCours}>
+                {conseilEnCours ? t('conseil.enCours') : t('conseil.chercher')}
+              </button>
+
+              {conseil && (
+                <div className="conseil">
+                  <p className="discret">{t('conseil.essais', { essais: conseil.essais })}</p>
+
+                  {conseil.gain <= 0.01 ? (
+                    <p>{t('conseil.rienDeMieux', { essais: conseil.essais })}</p>
+                  ) : (
+                    <>
+                      <p className="chiffre-large">
+                        <strong>−{conseil.gain.toFixed(1)} dB</strong>
+                        <span>
+                          {t('conseil.gain', {
+                            avant: conseil.ecartActuel.toFixed(1),
+                            apres: conseil.ecartPropose.toFixed(1)
+                          })}
+                        </span>
+                      </p>
+
+                      <h3>{t('conseil.pourquoi')}</h3>
+                      <ul>
+                        {conseil.effets.map((effet) => (
+                          <li key={effet.reglage}>
+                            {decrireEffet(effet)} — {t('conseil.apporte', { gain: effet.gain.toFixed(1) })}
+                          </li>
+                        ))}
+                      </ul>
+
+                      <button className="action-ecriture" onClick={appliquerLeConseil}>
+                        {t('conseil.appliquer')}
+                      </button>
+                    </>
+                  )}
+
+                  <p className="avertissement">{t('conseil.reserve')}</p>
+                </div>
+              )}
+            </>
           )}
 
           {enceinteSelectionnee && (

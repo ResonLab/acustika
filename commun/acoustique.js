@@ -520,3 +520,210 @@ export function couvertureSalle(zones, enceintes, bande, pas = 0.5) {
 
   return { zones: calculees, minimum, maximum, ecart: maximum - minimum }
 }
+
+/* ── Le conseil de placement ─────────────────────────────────────────────── */
+
+/**
+ * @typedef {object} Reglage
+ * @property {number} hauteur Hauteur d'accrochage, en mètres.
+ * @property {number} ecartement Écartement entre les enceintes, en mètres.
+ * @property {number} distanceVisee Distance du point visé, en mètres.
+ */
+
+/**
+ * @typedef {object} Effet
+ * @property {'hauteur'|'ecartement'|'distanceVisee'} reglage
+ * @property {number} depuis
+ * @property {number} vers
+ * @property {number} ecartSeul Écart obtenu en ne changeant que ce réglage-là.
+ * @property {number} gain Écart économisé par ce seul changement, en dB.
+ */
+
+/**
+ * @typedef {object} Conseil
+ * @property {Reglage} actuel
+ * @property {Reglage} propose
+ * @property {number} ecartActuel
+ * @property {number} ecartPropose
+ * @property {number} gain Écart économisé, en dB. Positif si le conseil aide.
+ * @property {number} essais Nombre de placements évalués.
+ * @property {Effet[]} effets Ce que chaque réglage apporte, mesuré séparément.
+ */
+
+/** Les réglages explorés. Volontairement courts : le conseil doit répondre. */
+const PLAGES = {
+  hauteur: [2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6],
+  facteurEcartement: [0.5, 0.7, 0.85, 1, 1.15, 1.3, 1.5],
+  facteurVisee: [0.4, 0.55, 0.7, 0.85, 1]
+}
+
+/** Le milieu des enceintes : c'est autour de lui qu'on écarte ou resserre. */
+function milieu(enceintes) {
+  const somme = enceintes.reduce(
+    (total, e) => ({ x: total.x + e.position.x, y: total.y + e.position.y }),
+    { x: 0, y: 0 }
+  )
+  return { x: somme.x / enceintes.length, y: somme.y / enceintes.length }
+}
+
+/** Le point le plus éloigné du public : c'est lui qui fixe l'échelle de visée. */
+function distanceMaximale(zones, depuis) {
+  let maximum = 0
+  for (const zone of zones) {
+    for (const point of zone.contour) {
+      const d = Math.hypot(point.x - depuis.x, point.y - depuis.y)
+      if (d > maximum) maximum = d
+    }
+  }
+  return maximum
+}
+
+/**
+ * Le réglage tel qu'il est aujourd'hui, lu sur les enceintes posées.
+ * @param {Enceinte[]} enceintes
+ * @returns {Reglage}
+ */
+export function reglageActuel(enceintes) {
+  const centre = milieu(enceintes)
+  const ecartement =
+    enceintes.length < 2
+      ? 0
+      : Math.max(...enceintes.map((e) => Math.hypot(e.position.x - centre.x, e.position.y - centre.y))) * 2
+
+  const distanceVisee =
+    enceintes.reduce(
+      (total, e) => total + Math.hypot(e.visee.x - e.position.x, e.visee.y - e.position.y),
+      0
+    ) / enceintes.length
+
+  return {
+    hauteur: enceintes.reduce((total, e) => total + (e.position.z ?? 0), 0) / enceintes.length,
+    ecartement,
+    distanceVisee
+  }
+}
+
+/**
+ * Applique un réglage à un jeu d'enceintes, sans toucher au reste.
+ *
+ * On ne réinvente pas des positions : on **transforme celles de l'utilisateur**.
+ * Proposer un placement qui ignore où il a jugé possible d'accrocher quelque
+ * chose serait un conseil inapplicable, donc inutile.
+ *
+ * @param {Enceinte[]} enceintes
+ * @param {Reglage} reglage
+ * @returns {Enceinte[]}
+ */
+export function appliquerReglage(enceintes, reglage) {
+  const centre = milieu(enceintes)
+  const actuel = reglageActuel(enceintes)
+  const facteur = actuel.ecartement > 0 ? reglage.ecartement / actuel.ecartement : 1
+
+  return enceintes.map((enceinte) => {
+    const position = {
+      x: centre.x + (enceinte.position.x - centre.x) * facteur,
+      y: centre.y + (enceinte.position.y - centre.y) * facteur,
+      z: reglage.hauteur
+    }
+
+    // La direction de visée est conservée ; seule sa portée change, ce qui
+    // revient à piquer plus ou moins bas.
+    const vers = {
+      x: enceinte.visee.x - enceinte.position.x,
+      y: enceinte.visee.y - enceinte.position.y
+    }
+    const longueur = Math.hypot(vers.x, vers.y) || 1
+    const visee = {
+      x: position.x + (vers.x / longueur) * reglage.distanceVisee,
+      y: position.y + (vers.y / longueur) * reglage.distanceVisee,
+      z: enceinte.visee.z ?? 0
+    }
+
+    return { ...enceinte, position, visee }
+  })
+}
+
+/**
+ * Cherche le placement dont la couverture est la plus régulière.
+ *
+ * **Le critère est unique et explicite** : l'écart de niveau sur toute la
+ * salle, entre le point le plus fort et le plus faible. Pas la moyenne, pas le
+ * niveau maximal — une salle bien couverte n'est pas une salle forte, c'est une
+ * salle où tout le monde entend la même chose.
+ *
+ * **Le conseil rend aussi de quoi l'expliquer.** Pour chaque réglage, on mesure
+ * ce qu'il apporte *seul*, en ne changeant que lui. Sans cela le résultat est
+ * un nombre tombé du ciel, et personne ne fait confiance à un nombre tombé du
+ * ciel — l'outil ne servirait alors à rien.
+ *
+ * **C'est une proposition, jamais une certitude.** Le modèle ne connaît ni les
+ * murs, ni le public, ni le mobilier. L'interface doit le dire.
+ *
+ * @param {Zone[]} zones
+ * @param {Enceinte[]} enceintes
+ * @param {number} bande
+ * @param {number} [pas] Résolution de la grille, en mètres.
+ * @returns {Conseil}
+ */
+export function conseillerPlacement(zones, enceintes, bande, pas = 1) {
+  if (zones.length === 0) throw new Error('Il faut au moins une zone d’écoute pour conseiller un placement.')
+  if (enceintes.length === 0) throw new Error('Il faut au moins une enceinte pour conseiller un placement.')
+
+  const actuel = reglageActuel(enceintes)
+  const centre = milieu(enceintes)
+  const portee = distanceMaximale(zones, centre) || 1
+
+  const ecartDe = (reglage) =>
+    couvertureSalle(zones, appliquerReglage(enceintes, reglage), bande, pas).ecart
+
+  const ecartActuel = ecartDe(actuel)
+
+  let meilleur = actuel
+  let ecartPropose = ecartActuel
+  let essais = 0
+
+  for (const hauteur of PLAGES.hauteur) {
+    for (const facteurEcartement of PLAGES.facteurEcartement) {
+      for (const facteurVisee of PLAGES.facteurVisee) {
+        const candidat = {
+          hauteur,
+          ecartement: actuel.ecartement * facteurEcartement,
+          distanceVisee: portee * facteurVisee
+        }
+        essais += 1
+        const ecart = ecartDe(candidat)
+        if (ecart < ecartPropose - 0.01) {
+          ecartPropose = ecart
+          meilleur = candidat
+        }
+      }
+    }
+  }
+
+  // Ce que chaque réglage apporte seul : on part du placement actuel et on ne
+  // change qu'une chose. C'est la seule façon honnête de dire « pourquoi ».
+  const effets = []
+  for (const reglage of ['hauteur', 'ecartement', 'distanceVisee']) {
+    if (Math.abs(meilleur[reglage] - actuel[reglage]) < 0.01) continue
+    const seul = { ...actuel, [reglage]: meilleur[reglage] }
+    const ecartSeul = ecartDe(seul)
+    effets.push({
+      reglage,
+      depuis: actuel[reglage],
+      vers: meilleur[reglage],
+      ecartSeul,
+      gain: ecartActuel - ecartSeul
+    })
+  }
+  effets.sort((a, b) => b.gain - a.gain)
+
+  return {
+    actuel,
+    propose: meilleur,
+    ecartActuel,
+    ecartPropose,
+    gain: ecartActuel - ecartPropose,
+    essais,
+    effets
+  }
+}
