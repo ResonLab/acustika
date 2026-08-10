@@ -32,7 +32,7 @@ export function projetVide(): Projet {
 function valider(projet: Projet): string | null {
   if (typeof projet !== 'object' || projet === null) return "Ce fichier n'est pas un projet."
   if (!Array.isArray(projet.zones) || !Array.isArray(projet.enceintes)) {
-    return 'Ce fichier ne contient ni zones ni enceintes : ce n’est pas un projet Acustika.'
+    return 'projetVide'
   }
   if (projet.version > VERSION_FORMAT) {
     return (
@@ -49,7 +49,7 @@ export function lireProjet(chemin: string): Projet {
   try {
     brut = JSON.parse(readFileSync(chemin, 'utf-8'))
   } catch {
-    throw new Error(`Ce fichier est illisible : il n'est pas au format d'un projet Acustika.`)
+    throw new Error('projetIllisible')
   }
 
   const projet = brut as Projet

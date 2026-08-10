@@ -63,10 +63,29 @@ verifier(
 
 console.log('\n=== L’honnêteté reste affichée ===')
 
+// L'avertissement a quitté le composant le jour où l'interface est devenue
+// traduisible : il vit maintenant dans `i18n.ts`. **Le contrôle a suivi le
+// texte** — laissé sur le composant, il aurait échoué alors que rien n'était
+// cassé, puis on l'aurait supprimé, et l'honnêteté n'aurait plus été vérifiée
+// du tout.
+//
+// Et il porte désormais sur **les deux langues** : un avertissement présent en
+// français mais vidé en anglais ne protège que la moitié des utilisateurs, et
+// c'est exactement le genre d'oubli qu'une traduction laisse passer.
 const bibliotheque = lire('src/renderer/src/pages/Bibliotheque.tsx')
+const traductions = lire('src/partage/i18n.ts')
+
 verifier(
-  'les gabarits sont annoncés comme génériques, pas comme des modèles réels',
-  bibliotheque.includes('gabarits génériques')
+  "l'écran affiche l'avertissement sur les gabarits",
+  bibliotheque.includes("t('biblio.avertissementFort')")
+)
+verifier(
+  'les gabarits sont annoncés comme génériques en français',
+  traductions.includes('gabarits génériques')
+)
+verifier(
+  'les gabarits sont annoncés comme génériques en anglais',
+  /generic templates/i.test(traductions)
 )
 
 console.log(echecs === 0 ? '\nAPPLICATION : TOUS LES TESTS PASSENT' : `\n${echecs} TEST(S) EN ECHEC`)

@@ -2,6 +2,24 @@ import { useCallback, useEffect, useState } from 'react'
 import Plan from './pages/Plan'
 import Bibliotheque from './pages/Bibliotheque'
 import type { ModeleEnceinte, Projet } from '../../partage/types'
+import { definirLangue, LANGUES, t, traduireErreur, type Langue } from '../../partage/i18n'
+
+/**
+ * La langue est propre au poste : elle vit dans le navigateur, pas dans le
+ * fichier de projet. Un projet transmis à un confrère ne doit pas lui imposer
+ * la langue de celui qui l'a créé.
+ */
+const CLE_LANGUE = 'acustika-langue'
+
+function langueInitiale(): Langue {
+  try {
+    const memorisee = localStorage.getItem(CLE_LANGUE)
+    if (memorisee === 'fr' || memorisee === 'en') return memorisee
+  } catch {
+    // Navigation privée ou stockage refusé : on part du français.
+  }
+  return 'fr'
+}
 
 /**
  * Acustika, application à documents : un projet est un fichier qu'on ouvre,
@@ -16,6 +34,21 @@ export default function App(): React.JSX.Element {
   const [modifie, setModifie] = useState(false)
   const [enceintes, setEnceintes] = useState<ModeleEnceinte[]>([])
   const [message, setMessage] = useState('')
+  const [langueActive, setLangueActive] = useState<Langue>(langueInitiale)
+
+  // Avant le premier rendu des enfants : sans cela, ils s'afficheraient une
+  // fois dans la langue précédente.
+  definirLangue(langueActive)
+
+  function changerLangue(nouvelle: Langue): void {
+    definirLangue(nouvelle)
+    setLangueActive(nouvelle)
+    try {
+      localStorage.setItem(CLE_LANGUE, nouvelle)
+    } catch {
+      // Le choix ne survivra pas à la fermeture, mais l'écran suit quand même.
+    }
+  }
 
   const rechargerBibliotheque = useCallback(async () => {
     setEnceintes(await window.api.bibliotheque.lister())
@@ -40,7 +73,7 @@ export default function App(): React.JSX.Element {
       setChemin(ouvert.chemin)
       setModifie(false)
     } catch (e) {
-      setMessage((e as Error).message)
+      setMessage(traduireErreur((e as Error).message))
     }
   }
 
@@ -52,15 +85,15 @@ export default function App(): React.JSX.Element {
       if (!resultat) return
       setChemin(resultat.chemin)
       setModifie(false)
-      setMessage(`Enregistré : ${resultat.nom}`)
+      setMessage(t('app.enregistre', { nom: resultat.nom }))
     } catch (e) {
-      setMessage((e as Error).message)
+      setMessage(traduireErreur((e as Error).message))
     }
   }
 
   async function nouveau(): Promise<void> {
     // Un projet non enregistré ne disparaît pas sans qu'on le dise.
-    if (modifie && !confirm('Le projet en cours a des modifications non enregistrées. Continuer ?')) {
+    if (modifie && !confirm(t('app.abandonner'))) {
       return
     }
     setProjet(await window.api.projet.nouveau())
@@ -78,7 +111,7 @@ export default function App(): React.JSX.Element {
           <div>
             <strong>Acustika</strong>
             <span className="discret">
-              {chemin ? chemin.split(/[\\/]/).pop() : 'Projet non enregistré'}
+              {chemin ? chemin.split(/[\\/]/).pop() : t('app.projetNonEnregistre')}
               {modifie ? ' •' : ''}
             </span>
           </div>
@@ -86,27 +119,39 @@ export default function App(): React.JSX.Element {
 
         <nav>
           <button className={onglet === 'plan' ? 'actif' : ''} onClick={() => setOnglet('plan')}>
-            Plan
+            {t('app.plan')}
           </button>
           <button
             className={onglet === 'bibliotheque' ? 'actif' : ''}
             onClick={() => setOnglet('bibliotheque')}
           >
-            Bibliothèque
+            {t('app.bibliotheque')}
           </button>
         </nav>
 
         <div className="actions">
           <button className="discret" onClick={nouveau}>
-            Nouveau
+            {t('app.nouveau')}
           </button>
           <button className="discret" onClick={ouvrir}>
-            Ouvrir…
+            {t('app.ouvrir')}
           </button>
-          <button onClick={() => enregistrer(false)}>Enregistrer</button>
+          <button onClick={() => enregistrer(false)}>{t('app.enregistrer')}</button>
           <button className="discret" onClick={() => enregistrer(true)}>
-            Enregistrer sous…
+            {t('app.enregistrerSous')}
           </button>
+
+          <select
+            aria-label={t('param.langue')}
+            value={langueActive}
+            onChange={(e) => changerLangue(e.target.value as Langue)}
+          >
+            {LANGUES.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.nom}
+              </option>
+            ))}
+          </select>
         </div>
       </header>
 

@@ -67,11 +67,19 @@ function ecrire(enceintes: ModeleEnceinte[]): void {
   writeFileSync(cheminBibliotheque(), JSON.stringify(enceintes, null, 2), 'utf-8')
 }
 
+/**
+ * Vérifie une fiche d'enceinte et rend **une clé**, pas une phrase.
+ *
+ * L'interface est traduisible, et le processus principal ne sait pas quelle
+ * langue la fenêtre affiche : un message écrit ici sortirait en français quel
+ * que soit le réglage. Les deux versions du texte vivent ensemble dans
+ * `src/partage/i18n.ts`, sous `erreur.<clé>`.
+ */
 function valider(enceinte: Omit<ModeleEnceinte, 'id'>): string | null {
-  if (!enceinte.nom.trim()) return 'Le nom est obligatoire.'
-  if (!Number.isFinite(enceinte.niveau1m)) return 'Le niveau à 1 m doit être un nombre.'
+  if (!enceinte.nom.trim()) return 'nomVide'
+  if (!Number.isFinite(enceinte.niveau1m)) return 'niveauNonNombre'
   if (enceinte.niveau1m < 60 || enceinte.niveau1m > 150) {
-    return 'Le niveau à 1 m doit être compris entre 60 et 150 dB.'
+    return 'niveauHorsLimites'
   }
   for (const bande of BANDES_OCTAVE) {
     const ouverture = enceinte.ouverture[bande]
@@ -147,12 +155,14 @@ export function importerCsv(contenu: string): { ajoutees: number; erreurs: strin
       marque: champs[1],
       niveau1m: Number(champs[2]),
       ouverture,
-      source: 'Importé depuis un CSV'
+      source: 'CSV'
     }
 
     const erreur = valider(enceinte)
     if (erreur) {
-      erreurs.push(`Ligne ${index + 1} : ${erreur}`)
+      // La ligne et la clé du détail voyagent en JSON : la fenêtre compose la
+      // phrase de sa langue.
+      erreurs.push(JSON.stringify({ cle: 'ligne', ligne: index + 1, detail: erreur }))
       continue
     }
     aAjouter.push(enceinte)

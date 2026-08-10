@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { couvertureSalle } from '../../../../commun/acoustique.js'
+import { t, traduireErreur } from '../../../partage/i18n'
 import type {
   EnceintePlacee,
   ModeleEnceinte,
@@ -111,7 +112,7 @@ export default function Plan({
       }))
       return couvertureSalle(zones, enceintesCalcul, projet.bande, 0.4)
     } catch (e) {
-      setErreur((e as Error).message)
+      setErreur(traduireErreur((e as Error).message))
       return null
     }
   }, [projet.zones, projet.bande, enceintesCalcul])
@@ -285,7 +286,7 @@ export default function Plan({
     if (outil === 'enceinte') {
       const modele = modeleParId.get(modeleChoisi)
       if (!modele) {
-        setErreur("Choisissez d'abord une enceinte dans la bibliothèque.")
+        setErreur(t('plan.choisirEnceinte'))
         return
       }
       const nouvelle: EnceintePlacee = {
@@ -333,12 +334,12 @@ export default function Plan({
 
   function terminerZone(): void {
     if (contourEnCours.length < 3) {
-      setErreur('Une zone demande au moins trois points.')
+      setErreur(t('plan.zoneTroisPoints'))
       return
     }
     const zone: ZoneEcoute = {
       id: identifiant(),
-      nom: `Zone ${projet.zones.length + 1}`,
+      nom: t('plan.zoneNumerotee', { numero: projet.zones.length + 1 }),
       contour: contourEnCours,
       hauteurOreilles: 1.2,
       altitude: 0,
@@ -356,7 +357,7 @@ export default function Plan({
     <div className="plan">
       <div className="barre-outils">
         <button className={outil === 'main' ? 'actif' : ''} onClick={() => setOutil('main')}>
-          Déplacer
+          {t('plan.deplacer')}
         </button>
         <button
           className={outil === 'zone' ? 'actif' : ''}
@@ -365,13 +366,13 @@ export default function Plan({
             setContourEnCours([])
           }}
         >
-          Dessiner une zone
+          {t('plan.dessinerZone')}
         </button>
         <button
           className={outil === 'enceinte' ? 'actif' : ''}
           onClick={() => setOutil('enceinte')}
         >
-          Poser une enceinte
+          {t('plan.poserEnceinte')}
         </button>
 
         <select value={modeleChoisi} onChange={(e) => setModeleChoisi(e.target.value)}>
@@ -395,9 +396,11 @@ export default function Plan({
 
         {outil === 'zone' && (
           <>
-            <button onClick={terminerZone}>Fermer la zone ({contourEnCours.length} pts)</button>
+            <button onClick={terminerZone}>
+              {t('plan.fermerZone', { points: contourEnCours.length })}
+            </button>
             <button className="discret" onClick={() => setContourEnCours([])}>
-              Annuler
+              {t('action.annuler')}
             </button>
           </>
         )}
@@ -421,22 +424,19 @@ export default function Plan({
         <aside className="panneau">
           {couverture && (
             <>
-              <h2>Couverture</h2>
+              <h2>{t('plan.couverture')}</h2>
               <p className="chiffre-large">
                 <strong>{couverture.ecart.toFixed(1)} dB</strong>
-                <span>écart sur toute la salle</span>
+                <span>{t('plan.ecartSalle')}</span>
               </p>
-              <p className="discret">
-                C&apos;est le chiffre qui compte : une salle bien couverte n&apos;est pas une salle
-                forte, c&apos;est une salle où tout le monde entend la même chose.
-              </p>
+              <p className="discret">{t('plan.ecartExplication')}</p>
 
               <table>
                 <thead>
                   <tr>
-                    <th>Zone</th>
-                    <th>Moy.</th>
-                    <th>Écart</th>
+                    <th>{t('plan.zone')}</th>
+                    <th>{t('plan.moyenne')}</th>
+                    <th>{t('plan.ecart')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -453,16 +453,14 @@ export default function Plan({
           )}
 
           {!couverture && (
-            <p className="discret">
-              Dessinez une zone et posez une enceinte : la couverture apparaîtra ici.
-            </p>
+            <p className="discret">{t('plan.riendAfficher')}</p>
           )}
 
           {enceinteSelectionnee && (
             <>
-              <h2>Enceinte choisie</h2>
+              <h2>{t('plan.enceinteChoisie')}</h2>
               <label>
-                Hauteur (m)
+                {t('plan.hauteur')}
                 <input
                   type="number"
                   step="0.1"
@@ -480,7 +478,7 @@ export default function Plan({
                 />
               </label>
               <label>
-                Gain (dB)
+                {t('plan.gain')}
                 <input
                   type="number"
                   step="0.5"
@@ -506,19 +504,19 @@ export default function Plan({
                   })
                 }
               >
-                Retirer cette enceinte
+                {t('plan.retirerEnceinte')}
               </button>
             </>
           )}
 
           {projet.zones.length > 0 && (
             <>
-              <h2>Zones</h2>
+              <h2>{t('plan.zones')}</h2>
               {projet.zones.map((zone) => (
                 <div key={zone.id} className="zone-reglage">
                   <strong>{zone.nom}</strong>
                   <label>
-                    Pente (%)
+                    {t('plan.pente')}
                     <input
                       type="number"
                       step="1"
@@ -542,7 +540,7 @@ export default function Plan({
                       })
                     }
                   >
-                    Supprimer
+                    {t('action.supprimer')}
                   </button>
                 </div>
               ))}

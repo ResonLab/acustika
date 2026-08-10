@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BANDES_OCTAVE } from '../../../../commun/acoustique.js'
 import type { ModeleEnceinte } from '../../../partage/types'
+import { t, traduireErreur } from '../../../partage/i18n'
 
 /**
  * La bibliothèque d'enceintes : le « stock » où l'on choisit avant de poser.
@@ -43,7 +44,7 @@ export default function Bibliotheque({
       setEdition(null)
       onChangement()
     } catch (e) {
-      setErreur((e as Error).message)
+      setErreur(traduireErreur((e as Error).message))
     }
   }
 
@@ -58,24 +59,24 @@ export default function Bibliotheque({
     const resultat = await window.api.bibliotheque.importerCsv()
     if (!resultat) return
     onChangement()
-    setMessage(`${resultat.ajoutees} enceinte(s) importée(s).`)
-    if (resultat.erreurs.length > 0) setErreur(resultat.erreurs.join(' · '))
+    setMessage(t('biblio.importees', { nombre: resultat.ajoutees }))
+    if (resultat.erreurs.length > 0) setErreur(resultat.erreurs.map(traduireErreur).join(' · '))
   }
 
   return (
     <div className="page">
       <div className="barre-outils">
-        <button onClick={nouvelle}>+ Nouvelle enceinte</button>
+        <button onClick={nouvelle}>{t('biblio.nouvelle')}</button>
         <button className="discret" onClick={importer}>
-          Importer un CSV…
+          {t('biblio.importerCsv')}
         </button>
       </div>
 
       <p className="avertissement">
-        <strong>Les enceintes livrées sont des gabarits génériques</strong>, pas des modèles du
-        commerce. Corrigez le niveau et les ouvertures avec la fiche technique réelle : une
-        directivité inventée donne un placement faux avec l&apos;air d&apos;être sûr. Le format
-        ouvert visé est le <strong>CLF</strong> ; en attendant, le CSV permet la saisie.
+        <strong>{t('biblio.avertissementFort')}</strong>
+        {t('biblio.avertissementSuite')}
+        <strong>CLF</strong>
+        {t('biblio.avertissementFin')}
       </p>
 
       {message && <p className="succes">{message}</p>}
@@ -83,10 +84,10 @@ export default function Bibliotheque({
 
       {edition && (
         <div className="carte">
-          <h2>{edition.id ? 'Modifier' : 'Nouvelle enceinte'}</h2>
+          <h2>{edition.id ? t('action.modifier') : t('biblio.titreNouvelle')}</h2>
           <div className="formulaire">
             <label>
-              Nom
+              {t('biblio.nom')}
               <input
                 value={edition.nom}
                 onChange={(e) => setEdition({ ...edition, nom: e.target.value })}
@@ -94,14 +95,14 @@ export default function Bibliotheque({
               />
             </label>
             <label>
-              Marque
+              {t('biblio.marque')}
               <input
                 value={edition.marque}
                 onChange={(e) => setEdition({ ...edition, marque: e.target.value })}
               />
             </label>
             <label>
-              Niveau à 1 m (dB)
+              {t('biblio.niveau1m')} (dB)
               <input
                 type="number"
                 value={edition.niveau1m}
@@ -109,7 +110,7 @@ export default function Bibliotheque({
               />
             </label>
             <label>
-              Provenance des données
+              {t('biblio.provenanceDonnees')}
               <input
                 value={edition.source}
                 onChange={(e) => setEdition({ ...edition, source: e.target.value })}
@@ -117,7 +118,7 @@ export default function Bibliotheque({
             </label>
           </div>
 
-          <h3>Ouverture à −6 dB, par bande</h3>
+          <h3>{t('biblio.ouverture')}</h3>
           <div className="formulaire">
             {BANDES_OCTAVE.map((bande) => (
               <label key={bande}>
@@ -137,9 +138,9 @@ export default function Bibliotheque({
           </div>
 
           <div className="barre-boutons">
-            <button onClick={enregistrer}>Enregistrer</button>
+            <button onClick={enregistrer}>{t('action.enregistrer')}</button>
             <button className="discret" onClick={() => setEdition(null)}>
-              Annuler
+              {t('action.annuler')}
             </button>
           </div>
         </div>
@@ -149,13 +150,13 @@ export default function Bibliotheque({
         <table>
           <thead>
             <tr>
-              <th>Nom</th>
-              <th>Marque</th>
-              <th>Niveau 1 m</th>
+              <th>{t('biblio.nom')}</th>
+              <th>{t('biblio.marque')}</th>
+              <th>{t('biblio.niveau1m')}</th>
               {BANDES_OCTAVE.map((bande) => (
                 <th key={bande}>{bande}</th>
               ))}
-              <th>Provenance</th>
+              <th>{t('biblio.provenance')}</th>
               <th></th>
             </tr>
           </thead>
@@ -171,10 +172,10 @@ export default function Bibliotheque({
                 <td className="discret">{enceinte.source}</td>
                 <td>
                   <button className="discret" onClick={() => setEdition(enceinte)}>
-                    Modifier
+                    {t('action.modifier')}
                   </button>
                   <button className="discret" onClick={() => supprimer(enceinte.id)}>
-                    Supprimer
+                    {t('action.supprimer')}
                   </button>
                 </td>
               </tr>
@@ -182,7 +183,7 @@ export default function Bibliotheque({
             {enceintes.length === 0 && (
               <tr>
                 <td colSpan={11} className="discret">
-                  La bibliothèque est vide.
+                  {t('biblio.vide')}
                 </td>
               </tr>
             )}
