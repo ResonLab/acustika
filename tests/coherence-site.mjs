@@ -87,6 +87,17 @@ const pageCarte = readFileSync(join(DOCS, 'carte-couverture.html'), 'utf-8')
 if (!pageCarte.includes("from './commun/acoustique.js'")) {
   echec("carte-couverture.html n'importe plus './commun/acoustique.js' — le site publié ne trouverait pas la physique")
 }
+
+// La page anglaise vit un cran plus bas : son import remonte d'un niveau. Sans
+// ce contrôle, elle pourrait recopier le calcul « pour être autonome », et une
+// carte de couleurs est très convaincante même quand elle est fausse.
+const pageCarteEn = readFileSync(join(DOCS, 'en/carte-couverture.html'), 'utf-8')
+if (!pageCarteEn.includes("from '../commun/acoustique.js'")) {
+  echec("en/carte-couverture.html n'importe plus la physique partagée")
+}
+if (/function (niveauTotal|calculerCarte|attenuationAngulaire)/.test(pageCarteEn)) {
+  echec('en/carte-couverture.html redéfinit une fonction du module partagé')
+}
 if (existsSync(join(RACINE, 'docs/commun/acoustique.js'))) {
   const copie = readFileSync(join(RACINE, 'docs/commun/acoustique.js'), 'utf-8')
   const source = readFileSync(join(RACINE, 'commun/acoustique.js'), 'utf-8')

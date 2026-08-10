@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Carte de couverture — Acustika</title>
+    <title>Coverage map — Acustika</title>
     <style>
       /* Dégradé d'Acustika : violet clair → violet profond. */
       :root {
@@ -174,25 +174,25 @@
   </head>
   <body>
     <nav class="langues">
-      <a href="en/carte-couverture.html">EN</a>
-      <a href="./">Acustika</a>
+      <a href="../carte-couverture.html">FR</a>
+      <a href="../en/">Acustika</a>
     </nav>
     <main>
-      <h1>Carte de couverture</h1>
+      <h1>Coverage map</h1>
       <p class="sous-titre">
-        Une salle rectangulaire, une ou deux enceintes, vue du dessus à hauteur d'oreilles.
+        A rectangular room, one or two loudspeakers, seen from above at ear height.
       </p>
 
       <div class="colonnes">
         <div>
           <section class="bloc">
-            <h2>La salle</h2>
+            <h2>The room</h2>
             <div class="champs">
-              <label>Largeur (m)<input id="largeur" type="number" value="12" min="1" step="0.5" /></label>
-              <label>Profondeur (m)<input id="profondeur" type="number" value="18" min="1" step="0.5" /></label>
-              <label>Hauteur d'oreilles (m)<input id="oreilles" type="number" value="1.2" min="0" step="0.1" /></label>
+              <label>Width (m)<input id="largeur" type="number" value="12" min="1" step="0.5" /></label>
+              <label>Depth (m)<input id="profondeur" type="number" value="18" min="1" step="0.5" /></label>
+              <label>Ear height (m)<input id="oreilles" type="number" value="1.2" min="0" step="0.1" /></label>
               <label>
-                Bande
+                Band
                 <select id="bande">
                   <option>125</option>
                   <option>250</option>
@@ -207,28 +207,28 @@
           </section>
 
           <section class="bloc">
-            <h2>Enceintes</h2>
+            <h2>Loudspeakers</h2>
             <div class="champs">
-              <label>Niveau à 1 m (dB)<input id="niveau" type="number" value="100" step="1" /></label>
-              <label>Hauteur (m)<input id="hauteur" type="number" value="3" min="0" step="0.1" /></label>
-              <label>Écartement (m)<input id="ecartement" type="number" value="6" min="0" step="0.5" /></label>
-              <label>Recul (m)<input id="recul" type="number" value="0" step="0.5" /></label>
+              <label>Level at 1 m (dB)<input id="niveau" type="number" value="100" step="1" /></label>
+              <label>Height (m)<input id="hauteur" type="number" value="3" min="0" step="0.1" /></label>
+              <label>Spacing (m)<input id="ecartement" type="number" value="6" min="0" step="0.5" /></label>
+              <label>Setback (m)<input id="recul" type="number" value="0" step="0.5" /></label>
               <label>
-                Nombre
+                Number
                 <select id="nombre">
-                  <option value="1">Une, au centre</option>
-                  <option value="2" selected>Deux, en stéréo</option>
+                  <option value="1">One, centred</option>
+                  <option value="2" selected>Two, stereo</option>
                 </select>
               </label>
-              <label>Ouverture à −6 dB (°)<input id="ouverture" type="number" value="90" min="10" max="360" step="5" /></label>
+              <label>Coverage at −6 dB (°)<input id="ouverture" type="number" value="90" min="10" max="360" step="5" /></label>
             </div>
           </section>
         </div>
 
         <div>
           <section class="bloc">
-            <h2>Vue du dessus</h2>
-            <canvas id="carte" width="600" height="900" aria-label="Carte de couverture"></canvas>
+            <h2>Seen from above</h2>
+            <canvas id="carte" width="600" height="900" aria-label="Coverage map"></canvas>
 
             <div class="echelle">
               <span id="bas">—</span>
@@ -237,8 +237,8 @@
             </div>
 
             <div class="chiffres">
-              <div class="chiffre"><strong id="ecart">—</strong><span>écart max−min</span></div>
-              <div class="chiffre"><strong id="moyenne">—</strong><span>moyenne</span></div>
+              <div class="chiffre"><strong id="ecart">—</strong><span>max−min spread</span></div>
+              <div class="chiffre"><strong id="moyenne">—</strong><span>mean</span></div>
               <div class="chiffre"><strong id="maximum">—</strong><span>maximum</span></div>
               <div class="chiffre"><strong id="minimum">—</strong><span>minimum</span></div>
             </div>
@@ -247,20 +247,19 @@
           </section>
 
           <p class="avertissement">
-            <strong>Ce que cette carte ne montre pas.</strong> Elle calcule le
-            <em>champ direct</em> : ni réflexions sur les murs, ni réverbération, ni déphasage
-            entre enceintes. Deux enceintes y ajoutent 3 dB là où, en vrai, elles peuvent
-            s'ajouter jusqu'à 6 dB ou s'annuler. Elle sert à comparer des placements, pas à
-            promettre un résultat.
+            <strong>What this map does not show.</strong> It computes the <em>direct field</em>:
+            no reflections off the walls, no reverberation, no phase between loudspeakers. Two
+            loudspeakers add 3 dB here where, in reality, they can add up to 6 dB or cancel. It is
+            for comparing placements, not for promising a result.
           </p>
         </div>
       </div>
 
       <footer>
         <p>
-          <strong>Acustika</strong>. Ce qui compte pour un placement n'est pas le niveau le plus
-          fort, c'est l'<strong>écart</strong> entre le premier et le dernier rang : plus il est
-          petit, plus la salle entend la même chose.
+          <strong>Acustika</strong>. What matters for a placement is not the loudest level, it is
+          the <strong>spread</strong> between the first and the last row: the smaller it is, the
+          more the room hears the same thing.
         </p>
       </footer>
     </main>
@@ -270,7 +269,7 @@
       // valeurs connues à la main. Cette page ne fait que dessiner : une carte
       // de couleurs est très convaincante même quand elle est fausse, et la
       // seule protection est que le calcul ne vive pas ici.
-      import { calculerCarte } from './commun/acoustique.js'
+      import { calculerCarte } from '../commun/acoustique.js'
 
       const $ = (id) => document.getElementById(id)
       const toile = $('carte')
