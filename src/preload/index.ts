@@ -11,7 +11,12 @@ const api = {
       ipcRenderer.invoke('bibliotheque:modifier', enceinte),
     supprimer: (id: string): Promise<void> => ipcRenderer.invoke('bibliotheque:supprimer', id),
     importerCsv: (): Promise<{ ajoutees: number; erreurs: string[] } | null> =>
-      ipcRenderer.invoke('bibliotheque:importerCsv')
+      ipcRenderer.invoke('bibliotheque:importerCsv'),
+    importerPolaire: (): Promise<{
+      nom: string
+      ouverture: Record<number, number>
+      avertissements: string[]
+    } | null> => ipcRenderer.invoke('bibliotheque:importerPolaire')
   },
 
   projet: {

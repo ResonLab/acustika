@@ -1,4 +1,5 @@
 import { app, dialog, ipcMain } from 'electron'
+import { lireDonneesPolaires } from '../../../commun/polaire.js'
 import { readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import {
@@ -40,6 +41,29 @@ export function enregistrerHandlers(): void {
     })
     if (resultat.canceled || resultat.filePaths.length === 0) return null
     return importerCsv(readFileSync(resultat.filePaths[0], 'utf-8'))
+  })
+
+  // L'import de données polaires : on lit le fichier ici, parce qu'ouvrir un
+  // sélecteur n'a de sens que sur un poste. Le calcul, lui, vit dans
+  // `commun/polaire.js`, avec ses vérifications.
+  ipcMain.handle('bibliotheque:importerPolaire', async () => {
+    const resultat = await dialog.showOpenDialog({
+      title: 'Importer des données polaires',
+      filters: [
+        { name: 'Données polaires', extensions: ['csv', 'txt', 'tsv', 'dat'] },
+        { name: 'Tous les fichiers', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    })
+    if (resultat.canceled || resultat.filePaths.length === 0) return null
+
+    const chemin = resultat.filePaths[0]
+    const lecture = lireDonneesPolaires(readFileSync(chemin, 'utf-8'))
+    return {
+      nom: basename(chemin).replace(/\.[^.]+$/, ''),
+      ouverture: lecture.ouverture,
+      avertissements: lecture.avertissements
+    }
   })
 
   ipcMain.handle('projet:nouveau', () => projetVide())

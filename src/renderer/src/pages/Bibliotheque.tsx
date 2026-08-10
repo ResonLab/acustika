@@ -63,12 +63,55 @@ export default function Bibliotheque({
     if (resultat.erreurs.length > 0) setErreur(resultat.erreurs.map(traduireErreur).join(' · '))
   }
 
+  /**
+   * Importe des données polaires et en déduit l'ouverture par bande.
+   *
+   * **Le résultat est proposé, pas enregistré.** Une directivité importée de
+   * travers donnerait un placement faux avec l'aplomb d'un vrai : l'utilisateur
+   * doit voir les chiffres avant qu'ils n'entrent dans la bibliothèque.
+   */
+  async function importerPolaire(): Promise<void> {
+    setErreur('')
+    setMessage('')
+    try {
+      const lecture = await window.api.bibliotheque.importerPolaire()
+      if (!lecture) return
+
+      // Les bandes que le fichier ne couvre pas gardent la valeur par défaut :
+      // laisser un trou ferait échouer le calcul de niveau sur cette bande-là,
+      // et l'utilisateur ne saurait pas pourquoi.
+      const ouverture: Record<number, number> = {}
+      for (const bande of BANDES_OCTAVE) ouverture[bande] = lecture.ouverture[bande] ?? 90
+
+      setEdition({
+        id: '',
+        nom: lecture.nom,
+        marque: '',
+        niveau1m: 100,
+        ouverture,
+        source: t('biblio.importerPolaire')
+      })
+      setMessage(
+        t('biblio.polaireLu', {
+          nom: lecture.nom,
+          bandes: Object.keys(lecture.ouverture).length
+        })
+      )
+      if (lecture.avertissements.length > 0) setErreur(lecture.avertissements.join(' · '))
+    } catch (e) {
+      setErreur(traduireErreur((e as Error).message))
+    }
+  }
+
   return (
     <div className="page">
       <div className="barre-outils">
         <button onClick={nouvelle}>{t('biblio.nouvelle')}</button>
         <button className="discret" onClick={importer}>
           {t('biblio.importerCsv')}
+        </button>
+        <button className="discret" onClick={importerPolaire}>
+          {t('biblio.importerPolaire')}
         </button>
       </div>
 
@@ -78,6 +121,9 @@ export default function Bibliotheque({
         <strong>CLF</strong>
         {t('biblio.avertissementFin')}
       </p>
+
+      <p className="discret">{t('biblio.polaireExplication')}</p>
+      <p className="discret">{t('biblio.clfNonLu')}</p>
 
       {message && <p className="succes">{message}</p>}
       {erreur && <p className="erreur">{erreur}</p>}

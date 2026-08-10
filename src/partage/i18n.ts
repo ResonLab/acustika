@@ -185,6 +185,22 @@ const TEXTES = {
     fr: ' ; en attendant, le CSV permet la saisie.',
     en: '; in the meantime, CSV allows manual entry.'
   },
+  'biblio.importerPolaire': {
+    fr: 'Importer des données polaires…',
+    en: 'Import polar data…'
+  },
+  'biblio.polaireLu': {
+    fr: 'Lu depuis {nom} : {bandes} bande(s). Vérifiez avant d’enregistrer.',
+    en: 'Read from {nom}: {bandes} band(s). Check before saving.'
+  },
+  'biblio.polaireExplication': {
+    fr: 'Un tableau texte : les angles en colonnes et les bandes en lignes, ou l’inverse — les deux sont reconnues. L’ouverture à −6 dB est déduite par interpolation entre vos relevés.',
+    en: 'A text table: angles in columns and bands in rows, or the other way round — both are recognised. The coverage angle at −6 dB is derived by interpolating between your readings.'
+  },
+  'biblio.clfNonLu': {
+    fr: 'Les fichiers CLF (.cf1, .cf2) ne sont pas lus : leur structure n’est pas publique, et un lecteur qui devinerait produirait des directivités fausses — donc des placements faux avec l’aplomb des vrais. Exportez les données polaires en texte depuis votre visualiseur.',
+    en: 'CLF files (.cf1, .cf2) are not read: their structure is not public, and a reader that guessed would produce wrong directivity — hence wrong placements with the confidence of right ones. Export the polar data as text from your viewer.'
+  },
   'biblio.nom': { fr: 'Nom', en: 'Name' },
   'biblio.marque': { fr: 'Marque', en: 'Brand' },
   'biblio.niveau1m': { fr: 'Niveau 1 m', en: 'Level at 1 m' },
