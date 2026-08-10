@@ -4,13 +4,15 @@
 > La vue d'ensemble des trois applications est dans [../LISEZ-MOI.md](../LISEZ-MOI.md).
 > Ce fichier-ci ne concerne qu'Acustika.
 
-**État : l'application Electron existe et tourne.** Un plan où l'on dessine ses
-zones, où l'on pose ses enceintes et où la couverture se recalcule ; une
-bibliothèque d'enceintes ; un projet qui s'enregistre et se rouvre.
+**État au 10 août 2026 — complète, bilingue, publiée.** Un plan où l'on dessine
+ses zones, où l'on pose ses enceintes et où la couverture se recalcule ; une vue
+en coupe ; des retards d'alignement ; **et le conseil de placement, qui explique
+pourquoi**. Publiée en 0.1.0 pour Windows et Linux — mais **cette release est
+antérieure à tout cela** : il faut une 0.2.0.
 
 ```bash
 cd Acustika && npm install && npm run dev
-cd Acustika && npm run verifier   # typecheck + 2 suites
+cd Acustika && npm run verifier   # typecheck + 5 suites
 ```
 
 Ce que l'application sait faire aujourd'hui :
@@ -25,6 +27,12 @@ Ce que l'application sait faire aujourd'hui :
 | **Chiffres par zone** | moyenne et écart, plus l'écart de toute la salle |
 | **Projet** | fichier `.acustika` en JSON lisible, ouvrir / enregistrer |
 | **Import CSV** | une enceinte par ligne, ouverture par bande |
+| **Import de données polaires** | un tableau texte ; l'ouverture à −6 dB est déduite par interpolation |
+| **Vue en coupe** | le profil du sol, les oreilles, les enceintes et leur piqué |
+| **Retards d'alignement** | les rappels attendent la façade, marge de localisation comprise |
+| **Conseil de placement** | 315 placements essayés, et **l'explication de ce que chaque réglage apporte** |
+| **Échelle et curseur** | légende fidèle à la carte, niveau lu sous la souris |
+| **Français et anglais** | 95 clés, sélecteur dans la barre |
 
 Le projet est un **fichier**, pas une ligne de base : une simulation se
 transmet, s'archive avec un dossier de chantier, se compare. En JSON lisible —
@@ -94,11 +102,11 @@ Demandé le 9 août 2026, et à tenir :
 
 | Attendu | Où ça en est |
 |---|---|
-| **Une bibliothèque d'enceintes** (« un stock »), pas une saisie à chaque fois | à faire |
-| **Des zones d'écoute dessinées librement**, et plusieurs par projet | **fait** dans le calcul |
-| **Des surfaces en pente** (gradins, parterre incliné) | **fait** dans le calcul |
-| **Pas de GLL** — un format ouvert à la place, et du **CSV** | décidé, voir §3 |
-| « exactement comme EASE » pour le reste | voir §2, à lire avant de promettre |
+| **Une bibliothèque d'enceintes** (« un stock »), pas une saisie à chaque fois | **fait** |
+| **Des zones d'écoute dessinées librement**, et plusieurs par projet | **fait** |
+| **Des surfaces en pente** (gradins, parterre incliné) | **fait** |
+| **Pas de GLL** — un format ouvert à la place, et du **CSV** | **fait** pour le texte ; le CLF binaire reste ouvert, voir §4 |
+| « exactement comme EASE » pour le reste | **non, et ce sera toujours non** — voir §2 |
 
 **Le format ouvert cherché s'appelle CLF** (Common Loudspeaker Format). C'est
 celui de la section 3, décidé avant cette demande. **SOFA** (norme AES69) est la
@@ -121,8 +129,8 @@ oreilles montent avec le sol.
 n'est pas bien couverte, même si chaque zone prise isolément l'est. C'est cette
 mesure-là qui devra guider le conseil de placement.
 
-Reste à faire pour compléter la demande : la **bibliothèque d'enceintes**, le
-**dessin des zones à la souris**, et l'**import CLF/CSV**.
+**Tout ce qui a été demandé en toutes lettres est livré**, sauf la lecture du
+CLF **binaire** — et le refus de le deviner est motivé au §4.
 
 ---
 
@@ -226,18 +234,109 @@ Deux pièges déjà payés sur Ohmnia :
 L'icône doit être un PNG d'au moins 256×256 dans `build/icon.png`. Les PNG de la
 maison sont dans `Identite/png/`.
 
-### 4. Propre à Acustika
+### 4. Propre à Acustika — **fait, sauf le CLF binaire**
 
-- **Le conseil de placement** — l'étape qui distingue vraiment Acustika. Le
-  calcul rend déjà l'`ecart` de toute la salle : essayer plusieurs positions et
-  retenir celle dont l'écart est le plus faible. Puis **expliquer pourquoi**,
-  sinon personne ne fera confiance au résultat.
-- **L'import CLF**, le format ouvert visé. Le CSV existe déjà comme filet.
-- **Une vue en coupe** pour régler hauteurs et piqués : aujourd'hui on ne voit
-  que du dessus, et un piqué se juge de profil.
-- **Les retards automatiques** entre façade et rappels : `retardDAppoint()` est
-  écrit et testé, il reste à le brancher sur l'interface.
-- **Une échelle de couleurs choisie**, et l'affichage du niveau sous le curseur.
+**✔ Le conseil de placement** — ce qui distingue vraiment Acustika, et qui
+manquait. `conseillerPlacement()` essaie 315 placements en faisant varier
+hauteur, écartement et distance de visée.
+
+**Le critère est unique et explicite** : l'écart de niveau sur toute la salle.
+Pas la moyenne, pas le niveau maximal.
+
+**Il explique pourquoi.** Pour chaque réglage, on mesure ce qu'il apporte
+**seul**, en ne changeant que lui. Sans cela le résultat est un nombre tombé du
+ciel, et personne ne fait confiance à un nombre tombé du ciel : l'outil ne
+servirait à rien.
+
+**Il ne réinvente pas des positions, il transforme celles de l'utilisateur** —
+un placement qui ignore où il a jugé possible d'accrocher serait inapplicable.
+Et il s'applique par le **même** transformateur que celui de l'évaluation :
+appliquer autrement donnerait un placement différent de celui qui a été mesuré,
+et l'écart annoncé deviendrait un mensonge. Un test le vérifie.
+
+**✔ Les retards d'alignement.** `retardDAppoint()` était écrit et éprouvé mais
+branché sur rien. `retardsDAlignement()` prend la première enceinte pour façade
+et fait attendre les autres, marge de localisation de 10 ms comprise. La
+distance est celle des **trois dimensions** — un mètre de dénivelé compte, et
+c'est ce qui a fait échouer mon premier test : le test avait tort.
+
+**✔ La vue en coupe.** Un piqué se juge de profil : vue du dessus, une enceinte
+à 4 m qui vise le fond ressemble à une enceinte à 1 m qui vise ses pieds.
+L'échelle verticale est celle de l'horizontale — étirer la hauteur rendrait le
+dessin lisible et les angles faux. **Elle prélève au milieu des mailles, comme
+la carte** : aux bornes, le dernier point tombait sur le contour de la zone et
+en sortait au jeu près des flottants, laissant un trou au fond de la salle.
+
+**✔ L'échelle de couleurs et le niveau sous le curseur.** La légende reprend
+**exactement** les couleurs de la carte, et un test compare les deux listes
+couleur par couleur — un premier jet mettait un dégradé différent dans le CSS.
+Le niveau est **lu dans la grille affichée**, jamais recalculé : deux calculs
+pour le même point finiraient par se contredire d'un dixième de décibel.
+
+**✔ L'import de données polaires** (`commun/polaire.js`). Ce qu'Acustika
+utilise, c'est l'ouverture à −6 dB par bande ; une fiche technique donne un
+tableau d'angles et d'atténuations. Le module fait le pont **par
+interpolation** : arrondir à la mesure la plus proche ferait varier l'ouverture
+par bonds de 20°. Les deux dispositions — angles en colonnes ou en lignes — sont
+reconnues toutes seules.
+
+### Le CLF binaire — la seule chose qui reste
+
+**Deux vrais fichiers sont dans `tests/fichiers/`** : `cls-3300.CF1` et
+`Coax8.CF2`, fournis le 10 août 2026. C'est ce qui manquait pour travailler
+autrement qu'en devinant.
+
+**Ce qui est établi** en les analysant :
+
+- L'en-tête porte `v1.0e` à l'offset 20, puis un marqueur `AD BA`.
+- **Le premier octet distingue les deux formats** : `0x40` pour CF1, `0x41`
+  pour CF2.
+- Les métadonnées sont en clair : fabricant, modèle, « Column Loudspeaker »,
+  les dates, « Anechoic to 40ms », « Normalized to 1 meter ».
+- De longues suites de flottants little-endian **ressemblent vraiment à des
+  dB** : `-10,1 · -8,8 · -8,4 · -9,5 · -11,0 · -12,3…`, une progression douce,
+  pas du bruit.
+
+**Ce qui manque** : la carte qui dit *quelle suite correspond à quelle bande et
+à quel angle*. Chaînes et tableaux s'entremêlent comme les champs d'une
+structure C.
+
+**Ne pas écrire ce lecteur au jugé.** La chaîne est : fichier → directivité →
+carte de couverture → **conseil de placement**. Un octet mal interprété, et
+Acustika conseille un placement faux avec une explication parfaitement
+articulée. `commun/polaire.js` **reconnaît et refuse** un binaire, avec un
+message qui dit quoi faire.
+
+**Deux pistes, par ordre de sûreté :**
+
+1. **Les fichiers `.CIF`** — CLF Authoring travaille à partir d'eux et les
+   compile en CF1/CF2. **Ils sont en texte** : lisibles sans rien deviner. C'est
+   le chemin à privilégier.
+2. **Vérifier contre CLF Viewer** : ouvrir `cls-3300.CF1` et relever deux ou
+   trois valeurs à l'écran — « à 1 kHz, −6 dB vers 45° ». Cela transforme une
+   hypothèse de lecture en certitude, au lieu de la supposer.
+
+Les deux outils sont téléchargeables gratuitement sur `clfgroup.org`.
+
+### Ce qui n'est pas fait, et qui ne le sera pas ainsi
+
+**« Comme EASE » reste hors d'atteinte** : lancer de rayons, géométrie 3D
+complète, bases d'enceintes mesurées. Voir §2.
+
+**La marche suivante, elle, est atteignable : l'acoustique statistique.**
+Aujourd'hui Acustika calcule un champ direct, comme si la salle n'avait pas de
+murs. Or au-delà de la distance critique, c'est le champ réverbéré qui domine :
+le niveau cesse de baisser de 6 dB par doublement et se stabilise. **Un
+placement jugé sur le seul champ direct paraît donc bien pire au fond qu'il ne
+l'est, et l'écart — qui décide du conseil — est faux.**
+
+Ce qu'il faudrait : Sabine, Eyring au-delà de 0,2 d'absorption moyenne, la
+constante de salle, la distance critique, et l'addition en énergie du direct et
+du réverbéré. Des formules de manuel, vérifiables à la main. **Ce n'est pas du
+lancer de rayons** : le modèle ignorerait la forme de la salle et la position
+des absorbants, et se tromperait dans un couloir ou sous un balcon profond.
+C'est ce qu'un acousticien calcule avant d'ouvrir EASE — et cela suffirait à ne
+plus raisonner en plein air.
 
 ---
 
