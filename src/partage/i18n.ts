@@ -137,6 +137,20 @@ const TEXTES = {
     en: 'Outside the listening zones — nothing is computed there.'
   },
 
+  // --- Vue en coupe ---
+  'coupe.titre': { fr: 'Vue en coupe', en: 'Section view' },
+  'coupe.montrer': { fr: 'Voir de profil', en: 'View from the side' },
+  'coupe.cacher': { fr: 'Masquer la coupe', en: 'Hide the section' },
+  'coupe.explication': {
+    fr: 'Un piqué se juge de profil. Vue du dessus, une enceinte accrochée à 4 m qui vise le fond ressemble exactement à une enceinte posée à 1 m qui vise ses pieds : c’est la même flèche.',
+    en: 'A downtilt is judged from the side. Seen from above, a loudspeaker flown at 4 m aiming at the back looks exactly like one at 1 m aiming at its feet: it is the same arrow.'
+  },
+  'coupe.abscisse': { fr: 'Coupe à x = {x} m', en: 'Section at x = {x} m' },
+  'coupe.pique': { fr: '{nom} — piqué {angle}°', en: '{nom} — downtilt {angle}°' },
+  'coupe.releve': { fr: '{nom} — relevé de {angle}°', en: '{nom} — tilted up {angle}°' },
+  'coupe.sol': { fr: 'sol', en: 'floor' },
+  'coupe.oreilles': { fr: 'oreilles', en: 'ears' },
+
   // --- Retards d'alignement ---
   'retard.titre': { fr: 'Retards d’alignement', en: 'Alignment delays' },
   'retard.calculer': { fr: 'Aligner les rappels', en: 'Align the fills' },

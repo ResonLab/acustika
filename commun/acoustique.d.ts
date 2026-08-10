@@ -140,3 +140,33 @@ export function retardsDAlignement(
   margeMs?: number,
   temperatureCelsius?: number
 ): RetardCalcule[]
+
+export interface PointCoupe {
+  y: number
+  sol: number
+  oreilles: number
+  niveau: number | null
+}
+
+export interface EnceinteEnCoupe {
+  nom: string
+  y: number
+  z: number
+  viseeY: number
+  viseeZ: number
+  piqueDegres: number
+}
+
+export interface Coupe {
+  x: number
+  points: PointCoupe[]
+  enceintes: EnceinteEnCoupe[]
+}
+
+export function profilCoupe(
+  zones: Zone[],
+  enceintes: Enceinte[],
+  x: number,
+  bande: number,
+  pas?: number
+): Coupe

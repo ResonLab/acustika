@@ -26,7 +26,8 @@ import {
   retardDAppoint,
   retardMs,
   retardsDAlignement,
-  MARGE_LOCALISATION_MS
+  MARGE_LOCALISATION_MS,
+  profilCoupe
 } from '../commun/acoustique.js'
 
 let echecs = 0
@@ -532,6 +533,105 @@ refuseAvec(
   () => retardsDAlignement([facade], 4),
   's’y aligner'
 )
+
+console.log('\n=== La vue en coupe ===')
+
+// Des gradinsCoupe : le sol monte de 15 % sur la profondeur. C'est exactement le cas
+// où la vue du dessus ne suffit plus.
+const gradinsCoupe = [
+  {
+    nom: 'Gradins',
+    contour: [
+      { x: 0, y: 4 },
+      { x: 12, y: 4 },
+      { x: 12, y: 20 },
+      { x: 0, y: 20 }
+    ],
+    hauteurOreilles: 1.2,
+    altitude: 0,
+    pentePourcent: 15,
+    directionPenteDegres: 90
+  }
+]
+
+const facadeCoupe = [
+  {
+    nom: 'Façade',
+    position: { x: 6, y: 0, z: 5 },
+    visee: { x: 6, y: 14, z: 2 },
+    niveau1m: 100,
+    ouverture: ouvertureLarge
+  }
+]
+
+const coupe = profilCoupe(gradinsCoupe, facadeCoupe, 6, 1000, 0.5)
+
+// 16 m de profondeur, un point tous les 0,5 m, prélevés au centre des mailles.
+verifier('la coupe couvre toute la zone', coupe.points.length === 32, String(coupe.points.length))
+verifier('la coupe est prise à l’abscisse demandée', coupe.x === 6)
+
+// Le sol monte : 16 m à 15 % font 2,40 m.
+const premier = coupe.points[0]
+const dernier = coupe.points[coupe.points.length - 1]
+verifier(
+  'le sol monte avec la pente',
+  proche(dernier.sol - premier.sol, 2.325, 0.05),
+  `${premier.sol.toFixed(2)} m -> ${dernier.sol.toFixed(2)} m`
+)
+verifier(
+  'les oreilles montent avec le sol',
+  proche(dernier.oreilles - dernier.sol, 1.2, 0.01)
+)
+verifier(
+  'un niveau est calculé partout dans la zone',
+  coupe.points.every((p) => p.niveau !== null && Number.isFinite(p.niveau))
+)
+
+// Le piqué : l'enceinte est à 5 m, vise 2 m à 14 m de distance. Elle descend
+// de 3 m sur 14, soit environ 12°.
+const piqueFacade = coupe.enceintes[0].piqueDegres
+verifier(
+  'le piqué est compté sous l’horizontale',
+  piqueFacade > 0 && proche(piqueFacade, 12.1, 0.5),
+  `${piqueFacade.toFixed(1)}°`
+)
+
+// Une enceinte qui vise plus haut qu'elle pointe vers le haut : le signe doit
+// s'inverser, sinon on ne verrait pas la différence entre piquer et relever.
+const versLeHaut = profilCoupe(
+  gradinsCoupe,
+  [{ ...facadeCoupe[0], position: { x: 6, y: 0, z: 1 }, visee: { x: 6, y: 14, z: 3 } }],
+  6,
+  1000,
+  1
+)
+verifier(
+  'une enceinte qui relève a un piqué négatif',
+  versLeHaut.enceintes[0].piqueDegres < 0,
+  `${versLeHaut.enceintes[0].piqueDegres.toFixed(1)}°`
+)
+
+// Hors zone, on ne calcule rien plutôt que d'inventer.
+const zoneEtroite = [
+  {
+    ...gradinsCoupe[0],
+    contour: [
+      { x: 0, y: 4 },
+      { x: 4, y: 4 },
+      { x: 4, y: 20 },
+      { x: 0, y: 20 }
+    ],
+    pentePourcent: 0
+  }
+]
+const horsZone = profilCoupe(zoneEtroite, facadeCoupe, 10, 1000, 1)
+verifier(
+  'hors des zones, aucun niveau n’est inventé',
+  horsZone.points.every((p) => p.niveau === null)
+)
+
+refuseAvec('une coupe sans zone est refusée', () => profilCoupe([], facadeCoupe, 6, 1000), 'zone')
+refuseAvec('un pas nul est refusé', () => profilCoupe(gradinsCoupe, facadeCoupe, 6, 1000, 0), 'supérieur à zéro')
 
 console.log(echecs === 0 ? '\nACOUSTIQUE : TOUS LES TESTS PASSENT' : `\n${echecs} TEST(S) EN ECHEC`)
 process.exitCode = echecs === 0 ? 0 : 1

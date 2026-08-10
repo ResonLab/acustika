@@ -4,6 +4,7 @@ import {
   conseillerPlacement,
   couvertureSalle,
   MARGE_LOCALISATION_MS,
+  profilCoupe,
   retardsDAlignement,
   type Conseil,
   type Effet,
@@ -486,6 +487,38 @@ export default function Plan({
   const [sousCurseur, setSousCurseur] = useState<{ x: number; y: number; niveau: number | null } | null>(
     null
   )
+  const [coupeVisible, setCoupeVisible] = useState(false)
+  const toileCoupe = useRef<HTMLCanvasElement>(null)
+
+  /**
+   * La coupe est prise à l'abscisse de l'enceinte choisie, sinon au milieu de
+   * la salle : c'est là qu'on regarde quand on règle un piqué.
+   */
+  const xCoupe = useMemo(() => {
+    const choisie = projet.enceintes.find((e) => e.id === selection)
+    return choisie ? choisie.position.x : projet.largeur / 2
+  }, [projet.enceintes, projet.largeur, selection])
+
+  const coupe = useMemo(() => {
+    if (!coupeVisible || projet.zones.length === 0) return null
+    try {
+      const zones = projet.zones.map((z) => ({
+        nom: z.nom,
+        contour: z.contour,
+        hauteurOreilles: z.hauteurOreilles,
+        altitude: z.altitude,
+        pentePourcent: z.pentePourcent,
+        directionPenteDegres: z.directionPenteDegres
+      }))
+      return profilCoupe(zones, enceintesCalcul, xCoupe, projet.bande, 0.4)
+    } catch {
+      // La coupe est un confort : si elle ne peut pas être tracée, on ne
+      // dérange pas l'utilisateur avec une erreur — la carte, elle, l'aurait
+      // déjà signalée.
+      return null
+    }
+  }, [coupeVisible, projet.zones, projet.bande, enceintesCalcul, xCoupe])
+
   const [retards, setRetards] = useState<RetardCalcule[] | null>(null)
 
   /**
@@ -513,6 +546,79 @@ export default function Plan({
       setRetards(null)
     }
   }
+
+  /**
+   * Dessine la coupe : le sol, la ligne d'oreilles, les enceintes et leur visée.
+   *
+   * L'échelle verticale est **la même que l'horizontale** tant qu'elle tient.
+   * Étirer la hauteur rendrait le dessin plus lisible et les angles faux — or
+   * c'est précisément un angle qu'on vient juger ici.
+   */
+  useEffect(() => {
+    const canvas = toileCoupe.current
+    if (!canvas || !coupe) return
+    const pinceau = canvas.getContext('2d')
+    if (!pinceau) return
+
+    const points = coupe.points
+    const yMin = points[0]?.y ?? 0
+    const yMax = points[points.length - 1]?.y ?? 1
+    const hauteurMax = Math.max(
+      6,
+      ...points.map((p) => p.oreilles),
+      ...coupe.enceintes.map((e) => e.z)
+    )
+
+    const e = canvas.width / Math.max(1, yMax - yMin)
+    canvas.height = Math.min(260, Math.round(hauteurMax * e) + 30)
+    const versX = (y: number) => (y - yMin) * e
+    const versY = (z: number) => canvas.height - 15 - z * e
+
+    pinceau.fillStyle = '#0b0912'
+    pinceau.fillRect(0, 0, canvas.width, canvas.height)
+
+    // Le sol.
+    pinceau.strokeStyle = 'rgba(255,255,255,0.45)'
+    pinceau.lineWidth = 2
+    pinceau.beginPath()
+    points.forEach((point, index) => {
+      const x = versX(point.y)
+      const y = versY(point.sol)
+      if (index === 0) pinceau.moveTo(x, y)
+      else pinceau.lineTo(x, y)
+    })
+    pinceau.stroke()
+
+    // La ligne d'oreilles : c'est elle qu'il faut arroser.
+    pinceau.strokeStyle = 'rgba(181,140,255,0.7)'
+    pinceau.setLineDash([4, 4])
+    pinceau.beginPath()
+    points.forEach((point, index) => {
+      const x = versX(point.y)
+      const y = versY(point.oreilles)
+      if (index === 0) pinceau.moveTo(x, y)
+      else pinceau.lineTo(x, y)
+    })
+    pinceau.stroke()
+    pinceau.setLineDash([])
+
+    // Les enceintes et leur visée.
+    for (const enceinte of coupe.enceintes) {
+      const x = versX(enceinte.y)
+      const y = versY(enceinte.z)
+      pinceau.strokeStyle = 'rgba(255,255,255,0.55)'
+      pinceau.lineWidth = 1.5
+      pinceau.beginPath()
+      pinceau.moveTo(x, y)
+      pinceau.lineTo(versX(enceinte.viseeY), versY(enceinte.viseeZ))
+      pinceau.stroke()
+
+      pinceau.fillStyle = '#ffffff'
+      pinceau.beginPath()
+      pinceau.arc(x, y, 5, 0, Math.PI * 2)
+      pinceau.fill()
+    }
+  }, [coupe])
 
   const enceinteSelectionnee = projet.enceintes.find((e) => e.id === selection) ?? null
 
@@ -588,6 +694,42 @@ export default function Plan({
         />
 
         <aside className="panneau">
+          {projet.zones.length > 0 && (
+            <>
+              <h2>{t('coupe.titre')}</h2>
+              <p className="discret">{t('coupe.explication')}</p>
+              <button className="discret" onClick={() => setCoupeVisible(!coupeVisible)}>
+                {coupeVisible ? t('coupe.cacher') : t('coupe.montrer')}
+              </button>
+
+              {coupe && (
+                <div className="coupe">
+                  <p className="discret">{t('coupe.abscisse', { x: xCoupe.toFixed(1) })}</p>
+                  <canvas ref={toileCoupe} width={320} height={160} />
+                  <p className="legende-coupe">
+                    <span className="trait-sol" /> {t('coupe.sol')}
+                    <span className="trait-oreilles" /> {t('coupe.oreilles')}
+                  </p>
+                  <ul>
+                    {coupe.enceintes.map((enceinte) => (
+                      <li key={enceinte.nom}>
+                        {enceinte.piqueDegres >= 0
+                          ? t('coupe.pique', {
+                              nom: enceinte.nom,
+                              angle: enceinte.piqueDegres.toFixed(1)
+                            })
+                          : t('coupe.releve', {
+                              nom: enceinte.nom,
+                              angle: Math.abs(enceinte.piqueDegres).toFixed(1)
+                            })}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+
           {couverture && (
             <>
               <h2>{t('plan.couverture')}</h2>

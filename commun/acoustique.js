@@ -795,3 +795,108 @@ export function retardsDAlignement(
     }
   })
 }
+
+/* ── La vue en coupe ─────────────────────────────────────────────────────── */
+
+/**
+ * @typedef {object} PointCoupe
+ * @property {number} y Distance le long de la coupe, en mètres.
+ * @property {number} sol Altitude du sol à cet endroit, en mètres.
+ * @property {number} oreilles Hauteur d'écoute, en mètres.
+ * @property {number|null} niveau Niveau à hauteur d'oreilles, ou `null` hors zone.
+ */
+
+/**
+ * @typedef {object} EnceinteEnCoupe
+ * @property {string} nom
+ * @property {number} y
+ * @property {number} z
+ * @property {number} viseeY
+ * @property {number} viseeZ
+ * @property {number} piqueDegres Angle sous l'horizontale. Positif = vers le bas.
+ */
+
+/**
+ * @typedef {object} Coupe
+ * @property {number} x Abscisse de la coupe.
+ * @property {PointCoupe[]} points
+ * @property {EnceinteEnCoupe[]} enceintes
+ */
+
+/**
+ * Une coupe verticale de la salle, à une abscisse donnée.
+ *
+ * **Un piqué se juge de profil.** Vu du dessus, une enceinte accrochée à 4 m et
+ * visant le fond ressemble exactement à une enceinte posée à 1 m qui vise ses
+ * pieds : c'est la même flèche. La coupe est le seul endroit où l'on voit si le
+ * son passe au-dessus du premier rang ou dedans.
+ *
+ * Le niveau est calculé par `niveauTotal`, comme la carte : **une coupe qui
+ * aurait sa propre formule finirait par contredire la carte**, et on ne saurait
+ * plus laquelle croire.
+ *
+ * @param {Zone[]} zones
+ * @param {Enceinte[]} enceintes
+ * @param {number} x Abscisse de la coupe.
+ * @param {number} bande
+ * @param {number} [pas]
+ * @returns {Coupe}
+ */
+export function profilCoupe(zones, enceintes, x, bande, pas = 0.5) {
+  if (pas <= 0) throw new Error('Le pas de la coupe doit être supérieur à zéro.')
+  if (zones.length === 0) throw new Error('Il faut au moins une zone d’écoute pour une coupe.')
+
+  // L'étendue de la coupe : de la première à la dernière zone rencontrée.
+  let debut = Infinity
+  let fin = -Infinity
+  for (const zone of zones) {
+    for (const point of zone.contour) {
+      if (point.y < debut) debut = point.y
+      if (point.y > fin) fin = point.y
+    }
+  }
+
+  // On prélève **au milieu de chaque maille**, comme le fait la carte, et non
+  // aux bornes. Aux bornes, le dernier point tombe exactement sur le contour de
+  // la zone : il en sort au jeu près des flottants, et la coupe montrait un
+  // trou au fond de la salle. Prélever au centre supprime l'ambiguïté, et fait
+  // surtout que la coupe et la carte parlent des mêmes endroits.
+  const points = []
+  const nombre = Math.max(1, Math.round((fin - debut) / pas))
+  for (let i = 0; i < nombre; i += 1) {
+    const y = debut + (i + 0.5) * pas
+    const cible = { x, y }
+    const zone = zones.find((z) => pointDansPolygone(z.contour, cible))
+
+    if (!zone) {
+      points.push({ y, sol: 0, oreilles: 0, niveau: null })
+      continue
+    }
+
+    const sol = altitudeDuSol(zone, cible)
+    const oreilles = sol + zone.hauteurOreilles
+    const niveau =
+      enceintes.length === 0 ? null : niveauTotal(enceintes, { x, y, z: oreilles }, bande)
+    points.push({ y, sol, oreilles, niveau })
+  }
+
+  return {
+    x,
+    points,
+    enceintes: enceintes.map((enceinte) => {
+      const dy = enceinte.visee.y - enceinte.position.y
+      const dz = (enceinte.visee.z ?? 0) - (enceinte.position.z ?? 0)
+      // Le piqué, compté sous l'horizontale : c'est ainsi qu'on le lit sur une
+      // lyre ou sur un pied, et c'est le chiffre qu'on cherche à régler.
+      const piqueDegres = (Math.atan2(-dz, Math.abs(dy) || 1e-9) * 180) / Math.PI
+      return {
+        nom: enceinte.nom,
+        y: enceinte.position.y,
+        z: enceinte.position.z ?? 0,
+        viseeY: enceinte.visee.y,
+        viseeZ: enceinte.visee.z ?? 0,
+        piqueDegres
+      }
+    })
+  }
+}
