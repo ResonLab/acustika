@@ -3,8 +3,11 @@ import {
   appliquerReglage,
   conseillerPlacement,
   couvertureSalle,
+  MARGE_LOCALISATION_MS,
+  retardsDAlignement,
   type Conseil,
-  type Effet
+  type Effet,
+  type RetardCalcule
 } from '../../../../commun/acoustique.js'
 import { t, traduireErreur } from '../../../partage/i18n'
 import type {
@@ -447,6 +450,34 @@ export default function Plan({
     setConseil(null)
   }
 
+  const [retards, setRetards] = useState<RetardCalcule[] | null>(null)
+
+  /**
+   * Aligne les rappels sur la première enceinte, prise pour façade.
+   *
+   * `retardsDAlignement` vit dans `commun/acoustique.js`, avec la règle qu'il
+   * applique. Ici on ne fait que reporter le résultat sur le projet.
+   */
+  function alignerLesRappels(): void {
+    setErreur('')
+    try {
+      const calcules = retardsDAlignement(enceintesCalcul)
+      setRetards(calcules)
+
+      let rang = 0
+      const enceintes = projet.enceintes.map((e) => {
+        if (!e.active || !modeleParId.has(e.modeleId)) return e
+        const retard = calcules[rang]
+        rang += 1
+        return { ...e, retardMs: Math.round(retard.retardMs * 10) / 10 }
+      })
+      modifierProjet({ ...projet, enceintes })
+    } catch (e) {
+      setErreur(traduireErreur((e as Error).message))
+      setRetards(null)
+    }
+  }
+
   const enceinteSelectionnee = projet.enceintes.find((e) => e.id === selection) ?? null
 
   return (
@@ -550,6 +581,38 @@ export default function Plan({
 
           {!couverture && (
             <p className="discret">{t('plan.riendAfficher')}</p>
+          )}
+
+          {enceintesCalcul.length > 1 && (
+            <>
+              <h2>{t('retard.titre')}</h2>
+              <p className="discret">
+                {t('retard.explication', { marge: MARGE_LOCALISATION_MS })}
+              </p>
+              <button className="action-ecriture" onClick={alignerLesRappels}>
+                {t('retard.calculer')}
+              </button>
+
+              {retards && (
+                <div className="retards">
+                  <p className="succes">{t('retard.applique')}</p>
+                  <ul>
+                    {retards.map((r) => (
+                      <li key={r.nom}>
+                        {r.principale
+                          ? `${r.nom} — ${t('retard.facade')}`
+                          : t('retard.ligne', {
+                              nom: r.nom,
+                              distance: r.distanceM.toFixed(1),
+                              retard: r.retardMs.toFixed(1)
+                            })}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="avertissement">{t('retard.reserve')}</p>
+                </div>
+              )}
+            </>
           )}
 
           {enceintesCalcul.length > 0 && projet.zones.length > 0 && (

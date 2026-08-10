@@ -24,7 +24,9 @@ import {
   niveauEnUnPoint,
   niveauTotal,
   retardDAppoint,
-  retardMs
+  retardMs,
+  retardsDAlignement,
+  MARGE_LOCALISATION_MS
 } from '../commun/acoustique.js'
 
 let echecs = 0
@@ -468,6 +470,67 @@ refuseAvec(
   'sans enceinte, le conseil est refusé en français',
   () => conseillerPlacement(salleProfonde, [], 1000),
   'enceinte'
+)
+
+console.log('\n=== Retards d’alignement ===')
+
+const facade = {
+  nom: 'Façade',
+  position: { x: 6, y: 0, z: 4 },
+  visee: { x: 6, y: 20, z: 1.2 },
+  niveau1m: 100,
+  ouverture: ouvertureLarge
+}
+const rappel = {
+  nom: 'Rappel',
+  position: { x: 6, y: 20, z: 3 },
+  visee: { x: 6, y: 30, z: 1.2 },
+  niveau1m: 95,
+  ouverture: ouvertureLarge
+}
+
+const retards = retardsDAlignement([facade, rappel])
+verifier('la façade ne se retarde pas elle-même', retards[0].retardMs === 0 && retards[0].principale)
+// La distance est bien celle des trois dimensions : la façade est accrochée à
+// 4 m, le rappel à 3, et ce mètre de dénivelé compte. Comparer à `retardMs(20)`
+// faisait échouer ce test — c'était le test qui avait tort.
+verifier(
+  'le rappel attend le son de la façade, plus la marge',
+  proche(retards[1].retardMs, retardMs(retards[1].distanceM) + MARGE_LOCALISATION_MS, 0.001),
+  `${retards[1].retardMs.toFixed(2)} ms pour ${retards[1].distanceM.toFixed(3)} m`
+)
+verifier(
+  'la distance tient compte de la hauteur d’accrochage',
+  retards[1].distanceM > 20,
+  retards[1].distanceM.toFixed(3)
+)
+verifier(
+  'vingt mètres donnent environ 58 ms, plus 10 de marge',
+  proche(retards[1].retardMs, 68.3, 0.5),
+  retards[1].retardMs.toFixed(1)
+)
+
+// La marge n'est pas décorative : sans elle, l'oreille place la source au
+// milieu au lieu de la scène.
+const sansMarge = retardsDAlignement([facade, rappel], 0, 0)
+verifier(
+  'la marge est bien ce qui sépare les deux réglages',
+  proche(retards[1].retardMs - sansMarge[1].retardMs, MARGE_LOCALISATION_MS, 0.01)
+)
+
+// Il fait plus chaud, le son va plus vite, le rappel attend moins.
+const chaud = retardsDAlignement([facade, rappel], 0, MARGE_LOCALISATION_MS, 30)
+verifier('par temps chaud, le rappel attend moins', chaud[1].retardMs < retards[1].retardMs)
+
+refuseAvec(
+  'sans enceinte, le calcul est refusé en français',
+  () => retardsDAlignement([]),
+  'enceinte'
+)
+refuseAvec(
+  'une enceinte principale inexistante est signalée',
+  () => retardsDAlignement([facade], 4),
+  's’y aligner'
 )
 
 console.log(echecs === 0 ? '\nACOUSTIQUE : TOUS LES TESTS PASSENT' : `\n${echecs} TEST(S) EN ECHEC`)

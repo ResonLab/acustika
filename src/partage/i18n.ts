@@ -125,6 +125,24 @@ const TEXTES = {
     en: 'The criterion is the level spread across the whole room: a well-covered room is not a loud room, it is a room where everyone hears the same thing.'
   },
 
+  // --- Retards d'alignement ---
+  'retard.titre': { fr: 'Retards d’alignement', en: 'Alignment delays' },
+  'retard.calculer': { fr: 'Aligner les rappels', en: 'Align the fills' },
+  'retard.explication': {
+    fr: 'La première enceinte sert de façade. Les autres attendent le son qu’elle met à les atteindre, plus {marge} ms : c’est cette marge qui garde la localisation sur la scène.',
+    en: 'The first loudspeaker is the main system. The others wait for the sound to reach them, plus {marge} ms: that margin is what keeps the localisation on stage.'
+  },
+  'retard.facade': { fr: 'façade', en: 'main' },
+  'retard.ligne': {
+    fr: '{nom} — {distance} m de la façade → {retard} ms',
+    en: '{nom} — {distance} m from the main → {retard} ms'
+  },
+  'retard.applique': { fr: 'Retards appliqués.', en: 'Delays applied.' },
+  'retard.reserve': {
+    fr: 'Un alignement parfait partout n’existe pas : un spectateur placé entre la façade et le rappel entendra autre chose. C’est une contrainte physique, pas une limite de l’outil.',
+    en: 'A perfect alignment everywhere does not exist: a listener standing between the main and the fill will hear something else. That is physics, not a limit of the tool.'
+  },
+
   // --- Bibliothèque ---
   'biblio.nouvelle': { fr: '+ Nouvelle enceinte', en: '+ New loudspeaker' },
   'biblio.importerCsv': { fr: 'Importer un CSV…', en: 'Import a CSV…' },

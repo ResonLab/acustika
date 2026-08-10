@@ -125,3 +125,18 @@ export function conseillerPlacement(
   bande: number,
   pas?: number
 ): Conseil
+
+export interface RetardCalcule {
+  nom: string
+  principale: boolean
+  distanceM: number
+  retardMs: number
+}
+
+export const MARGE_LOCALISATION_MS: number
+export function retardsDAlignement(
+  enceintes: Enceinte[],
+  indexPrincipale?: number,
+  margeMs?: number,
+  temperatureCelsius?: number
+): RetardCalcule[]

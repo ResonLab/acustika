@@ -727,3 +727,71 @@ export function conseillerPlacement(zones, enceintes, bande, pas = 1) {
     effets
   }
 }
+
+/* ── Les retards d'alignement ────────────────────────────────────────────── */
+
+/**
+ * @typedef {object} RetardCalcule
+ * @property {string} nom
+ * @property {boolean} principale
+ * @property {number} distanceM Distance à l'enceinte principale, en mètres.
+ * @property {number} retardMs Retard à appliquer, en millisecondes.
+ */
+
+/**
+ * La marge qui garde la localisation sur la scène.
+ *
+ * Un rappel réglé au retard exact arrive **en même temps** que la façade :
+ * l'oreille place alors la source au milieu, ou sur le rappel. En le retardant
+ * d'une dizaine de millisecondes de plus, l'effet de précédence fait entendre
+ * la scène — le rappel ne fait plus que renforcer. C'est le réglage que tout
+ * technicien applique, et l'oublier s'entend tout de suite.
+ */
+export const MARGE_LOCALISATION_MS = 10
+
+/**
+ * Aligne des rappels sur une enceinte principale.
+ *
+ * **L'hypothèse est simple et assumée** : le son de la façade met, pour
+ * atteindre le rappel, le temps de parcourir la distance qui les sépare. Le
+ * rappel attend donc ce temps-là, plus la marge. C'est la règle de terrain, et
+ * elle vaut pour un public réparti derrière le rappel.
+ *
+ * **Ce que ce calcul ne fait pas** : il ne tient pas compte de l'endroit précis
+ * où l'auditeur se trouve. Un spectateur placé entre la façade et le rappel
+ * entendra un alignement différent — un alignement parfait partout n'existe
+ * pas, c'est une contrainte physique, pas une limite de l'outil.
+ *
+ * @param {Enceinte[]} enceintes
+ * @param {number} [indexPrincipale] L'enceinte de référence, la façade.
+ * @param {number} [margeMs]
+ * @param {number} [temperatureCelsius]
+ * @returns {RetardCalcule[]}
+ */
+export function retardsDAlignement(
+  enceintes,
+  indexPrincipale = 0,
+  margeMs = MARGE_LOCALISATION_MS,
+  temperatureCelsius = 20
+) {
+  if (enceintes.length === 0) {
+    throw new Error('Il faut au moins une enceinte pour calculer des retards.')
+  }
+  const principale = enceintes[indexPrincipale]
+  if (!principale) {
+    throw new Error(`Aucune enceinte à la position ${indexPrincipale} : impossible de s’y aligner.`)
+  }
+
+  return enceintes.map((enceinte, index) => {
+    if (index === indexPrincipale) {
+      return { nom: enceinte.nom, principale: true, distanceM: 0, retardMs: 0 }
+    }
+    const distanceM = distance(principale.position, enceinte.position)
+    return {
+      nom: enceinte.nom,
+      principale: false,
+      distanceM,
+      retardMs: retardMs(distanceM, temperatureCelsius) + margeMs
+    }
+  })
+}
