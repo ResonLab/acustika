@@ -350,7 +350,40 @@ export default function Plan({
     if (attrapee) setGlisse(attrapee)
   }
 
+  /**
+   * Le niveau sous le curseur.
+   *
+   * On lit le point calculé le plus proche plutôt que de recalculer : la carte
+   * affichée et le chiffre annoncé doivent venir de la **même** grille. Deux
+   * calculs pour le même endroit finiraient par se contredire d'un dixième de
+   * décibel, et c'est le genre d'écart qui fait douter de tout le reste.
+   */
+  function lireSousLeCurseur(point: Point2D): void {
+    if (!couverture) {
+      setSousCurseur(null)
+      return
+    }
+
+    let plusProche: { niveau: number; distance: number } | null = null
+    for (const zone of couverture.zones) {
+      for (const p of zone.points) {
+        const d = Math.hypot(p.x - point.x, p.y - point.y)
+        if (!plusProche || d < plusProche.distance) plusProche = { niveau: p.niveau, distance: d }
+      }
+    }
+
+    // Au-delà d'un demi-pas de grille, on est hors zone : mieux vaut le dire
+    // que d'afficher le niveau d'un point situé ailleurs.
+    const dansUneZone = plusProche !== null && plusProche.distance <= 0.6
+    setSousCurseur({
+      x: point.x,
+      y: point.y,
+      niveau: dansUneZone ? plusProche!.niveau : null
+    })
+  }
+
   function auDeplacement(evenement: React.MouseEvent<HTMLCanvasElement>): void {
+    lireSousLeCurseur(positionSouris(evenement))
     if (!glisse) return
     const point = positionSouris(evenement)
     modifierProjet({
@@ -450,6 +483,9 @@ export default function Plan({
     setConseil(null)
   }
 
+  const [sousCurseur, setSousCurseur] = useState<{ x: number; y: number; niveau: number | null } | null>(
+    null
+  )
   const [retards, setRetards] = useState<RetardCalcule[] | null>(null)
 
   /**
@@ -544,7 +580,10 @@ export default function Plan({
           onMouseDown={auPresse}
           onMouseMove={auDeplacement}
           onMouseUp={() => setGlisse(null)}
-          onMouseLeave={() => setGlisse(null)}
+          onMouseLeave={() => {
+            setGlisse(null)
+            setSousCurseur(null)
+          }}
           style={{ cursor: outil === 'main' ? 'grab' : 'crosshair' }}
         />
 
@@ -552,6 +591,28 @@ export default function Plan({
           {couverture && (
             <>
               <h2>{t('plan.couverture')}</h2>
+
+              <div className="echelle" role="img" aria-label={t('echelle.titre')}>
+                <span>{(couverture.maximum - PLAGE_DB).toFixed(0)} dB</span>
+                <div className="echelle-bande" />
+                <span>{couverture.maximum.toFixed(0)} dB</span>
+              </div>
+              <p className="discret">
+                {t('echelle.relatif', { haut: couverture.maximum.toFixed(1) })}
+              </p>
+
+              {sousCurseur && (
+                <p className="sous-curseur">
+                  {sousCurseur.niveau === null
+                    ? t('curseur.horsZone')
+                    : t('curseur.niveau', {
+                        niveau: sousCurseur.niveau.toFixed(1),
+                        x: sousCurseur.x.toFixed(1),
+                        y: sousCurseur.y.toFixed(1)
+                      })}
+                </p>
+              )}
+
               <p className="chiffre-large">
                 <strong>{couverture.ecart.toFixed(1)} dB</strong>
                 <span>{t('plan.ecartSalle')}</span>

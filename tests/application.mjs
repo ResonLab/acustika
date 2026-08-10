@@ -88,5 +88,29 @@ verifier(
   /generic templates/i.test(traductions)
 )
 
+console.log('\n=== La légende dit la vérité ===')
+
+// Une légende qui ne correspond pas à sa carte trompe au lieu d'aider : on
+// croit lire une échelle, on lit autre chose. Les deux listes de couleurs
+// doivent donc rester identiques, et rien ne le garantirait sans ce contrôle.
+const planAffichage = lire('src/renderer/src/pages/Plan.tsx')
+const styles = lire('src/renderer/src/styles.css')
+
+const couleursDeLaCarte = [...planAffichage.matchAll(/\[(\d+), (\d+), (\d+)\]/g)].map(
+  (m) => `${m[1]}, ${m[2]}, ${m[3]}`
+)
+const couleursDeLaLegende = [...styles.matchAll(/rgb\((\d+), (\d+), (\d+)\)/g)].map(
+  (m) => `${m[1]}, ${m[2]}, ${m[3]}`
+)
+
+verifier(
+  'la légende reprend les couleurs de la carte, dans le même ordre',
+  couleursDeLaCarte.length > 0 &&
+    couleursDeLaCarte.length === couleursDeLaLegende.length &&
+    couleursDeLaCarte.every((c, i) => c === couleursDeLaLegende[i]),
+  `carte : ${couleursDeLaCarte.join(' · ')}
+        légende : ${couleursDeLaLegende.join(' · ')}`
+)
+
 console.log(echecs === 0 ? '\nAPPLICATION : TOUS LES TESTS PASSENT' : `\n${echecs} TEST(S) EN ECHEC`)
 process.exitCode = echecs === 0 ? 0 : 1

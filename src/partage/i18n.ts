@@ -125,6 +125,18 @@ const TEXTES = {
     en: 'The criterion is the level spread across the whole room: a well-covered room is not a loud room, it is a room where everyone hears the same thing.'
   },
 
+  // --- Échelle et lecture sous le curseur ---
+  'echelle.titre': { fr: 'Échelle', en: 'Scale' },
+  'echelle.relatif': {
+    fr: 'Les couleurs sont relatives au point le plus fort de la salle : {haut} dB.',
+    en: 'Colours are relative to the loudest point in the room: {haut} dB.'
+  },
+  'curseur.niveau': { fr: '{niveau} dB à ({x} m, {y} m)', en: '{niveau} dB at ({x} m, {y} m)' },
+  'curseur.horsZone': {
+    fr: 'Hors des zones d’écoute — rien n’est calculé là.',
+    en: 'Outside the listening zones — nothing is computed there.'
+  },
+
   // --- Retards d'alignement ---
   'retard.titre': { fr: 'Retards d’alignement', en: 'Alignment delays' },
   'retard.calculer': { fr: 'Aligner les rappels', en: 'Align the fills' },

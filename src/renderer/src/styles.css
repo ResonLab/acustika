@@ -293,3 +293,37 @@ canvas {
   border-left: 3px solid var(--ambre);
   background: rgba(255, 201, 97, 0.09);
 }
+
+/* ── L'échelle de la carte ────────────────────────────────────────────────
+   Les mêmes couleurs que la carte, dans le même ordre. Une légende qui ne
+   correspond pas à ce qu'elle légende est pire qu'une absence de légende. */
+.echelle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 6px;
+  font-size: 12px;
+  color: var(--discret, #9d97ab);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.echelle-bande {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  /* Exactement les couleurs de COULEURS, dans Plan.tsx, et dans le même ordre.
+     Une légende qui ne correspond pas à sa carte trompe au lieu d'aider. */
+  background: linear-gradient(
+    90deg,
+    rgb(26, 20, 48),
+    rgb(80, 52, 168),
+    rgb(140, 96, 220),
+    rgb(230, 160, 170),
+    rgb(255, 201, 97)
+  );
+}
+
+.sous-curseur {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  margin: 0 0 12px;
+}
