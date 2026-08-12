@@ -125,6 +125,37 @@ if (!/disabled=\{!coche\}/.test(ecran)) {
   echec("le bouton d'acceptation ne dépend plus de la case")
 }
 
+// **Le mécanisme peut exister dans le code et rester inatteignable.** Scenika
+// était exactement dans cet état : `disabled={!luJusquauBout}` était bien là,
+// mais `.conditions-texte` n'avait aucune règle CSS. La zone n'était donc pas
+// une boîte à défilement, son `onScroll` ne se déclenchait jamais, la case
+// restait grise pour toujours — et l'application ne démarrait plus du tout.
+// Trouvé en la lançant, pas en la relisant.
+const styles = lire('src/renderer/src/styles.css')
+const blocTexte = styles.slice(
+  styles.indexOf('.conditions-texte {'),
+  styles.indexOf('}', styles.indexOf('.conditions-texte {'))
+)
+if (!styles.includes('.conditions-texte {')) {
+  echec('.conditions-texte n’a aucune règle CSS : la zone ne défilera pas et la case restera grise')
+} else {
+  if (!/overflow-y:\s*auto|overflow-y:\s*scroll/.test(blocTexte)) {
+    echec('.conditions-texte n’a pas d’overflow-y : ce n’est pas une boîte à défilement')
+  }
+  if (!/max-height:/.test(blocTexte)) {
+    echec('.conditions-texte n’a pas de max-height : rien ne la forcera à défiler')
+  }
+}
+
+// Le filet de sécurité : un texte qui tient sans défiler doit compter comme lu,
+// sinon l'écran est un piège sur un grand écran.
+if (!ecran.includes('scrollHeight <= zone.clientHeight')) {
+  echec(
+    "l'écran ne traite pas le cas où le texte tient sans défiler : " +
+      'la case resterait grise pour toujours'
+  )
+}
+
 const app = lire('src/renderer/src/App.tsx')
 if (!app.includes('if (!conditionsAcceptees)')) {
   echec("l'application ne bloque plus sur l'écran des conditions")

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   CONDITIONS_UTILISATION,
   RESUME_CONDITIONS,
@@ -41,6 +41,21 @@ export default function ConditionsUtilisation({ onAccepter }: Props): React.JSX.
     const enBas = zone.scrollTop + zone.clientHeight >= zone.scrollHeight - 12
     if (enBas) setLuJusquauBout(true)
   }
+
+  /**
+   * **Un texte qui tient sans défiler est un texte déjà lu.**
+   *
+   * Sinon l'écran devient un piège dont on ne sort pas : il n'y a rien à faire
+   * défiler, `onScroll` ne se déclenche jamais, et la case reste grise pour
+   * toujours — l'application ne démarre plus. Cela arrive sur un très grand
+   * écran, et cela arrivait dans Scenika dès que la feuille de style manquait :
+   * bug réel, trouvé en lançant l'application, pas en la relisant.
+   */
+  useEffect(() => {
+    const zone = texte.current
+    if (!zone) return
+    if (zone.scrollHeight <= zone.clientHeight + 12) setLuJusquauBout(true)
+  }, [])
 
   return (
     <div className="conditions-ecran">
