@@ -13,6 +13,9 @@ import {
   rt60Sabine,
   surfaceTotale,
   surfacesDepuisContour,
+  pourcentAlcons,
+  stiDepuisAlcons,
+  jugementSti,
   BANDES
 } from '../commun/salle.js'
 
@@ -345,6 +348,93 @@ console.log('\n=== Le piege : l’ecart de niveau ment dans une salle reverberan
     revNue > revTraitee + 10,
     `champ reverbere : ${revNue.toFixed(1)} dB nue contre ${revTraitee.toFixed(1)} dB traitee`
   )
+}
+
+console.log('=== L intelligibilite : Peutz, et ce que ca vaut ===')
+
+// **La conversion %ALcons -> STI se verifie contre une table publiee.** Ce
+// sont des correspondances connues, pas des valeurs reprises du code : 2 %
+// vaut 0,82, 10 % vaut 0,52, 15 % vaut 0,45.
+proche(stiDepuisAlcons(2), 0.82, 0.01, '2 % d articulation perdue -> STI 0,82')
+proche(stiDepuisAlcons(10), 0.52, 0.02, '10 % -> STI 0,52')
+proche(stiDepuisAlcons(15), 0.45, 0.02, '15 % -> STI 0,45')
+
+// Plus la perte est grande, plus le STI baisse. La relation, pas un point.
+let decroissant = true
+for (let a = 1; a < 30; a += 1) {
+  if (stiDepuisAlcons(a) <= stiDepuisAlcons(a + 1)) decroissant = false
+}
+verifier(decroissant, 'le STI baisse quand la perte d articulation monte')
+
+// Une salle sans reverberation n articule rien de travers.
+verifier(pourcentAlcons(10, 0, 3000, 6.83, 5) === 0, 'sans reverberation, aucune perte')
+verifier(stiDepuisAlcons(0) === 1, 'aucune perte -> STI parfait')
+
+// %ALcons = 200 . d2 . RT2 / (V . Q). A 10 m, RT 1,5 s, V 3000, Q 6,83 :
+// 200 x 100 x 2,25 / (3000 x 6,83) = 45000 / 20490 = 2,196 %
+proche(pourcentAlcons(10, 1.5, 3000, 6.83, 5), 45000 / 20490, 0.001, 'la formule de Peutz')
+
+// **La saturation au-dela de 3,16 fois la distance critique.** Sans elle, la
+// formule donnerait des valeurs absurdes au fond d une grande salle : le champ
+// reverbere y domine tellement qu eloigner l auditeur n y change plus rien.
+const rc = 5
+const auDela = pourcentAlcons(3.16 * rc + 1, 1.5, 3000, 6.83, rc)
+const bienAuDela = pourcentAlcons(60, 1.5, 3000, 6.83, rc)
+proche(auDela, 9 * 1.5, 0.001, 'au-dela de 3,16 rc la formule sature a 9 x RT60')
+verifier(auDela === bienAuDela, 's eloigner encore ne change plus rien')
+
+// **Le plafond vaut aussi en deca de la saturation**, et ce cas-ci est choisi
+// pour le prouver. Dans une salle petite et tres reverberante, la formule brute
+// depasse 9 x RT60 avant meme d atteindre 3,16 rc — elle cesse alors d avoir un
+// sens, et rendre sa valeur brute laisserait croire a une degradation que le
+// modele ne sait pas decrire.
+//
+// V = 1000, RT60 = 3 s, Q = 6,83, rc = 5 m donc saturation a 15,8 m. A 12 m :
+//   brut  = 200 x 144 x 9 / (1000 x 6,83) = 37,95 %
+//   plafond = 9 x 3 = 27 %
+// Sans le plafond, le test passerait a 37,95 et personne ne le verrait.
+proche(pourcentAlcons(12, 3, 1000, 6.83, 5), 27, 0.001, 'le plafond mord avant la saturation')
+verifier(
+  pourcentAlcons(12, 3, 1000, 6.83, 5) < (200 * 144 * 9) / (1000 * 6.83) - 1,
+  'la valeur brute aurait ete bien plus haute'
+)
+
+// Doubler la distance quadruple la perte, tant qu on reste sous la saturation.
+proche(
+  pourcentAlcons(8, 1.2, 8000, 6.83, 12) / pourcentAlcons(4, 1.2, 8000, 6.83, 12),
+  4,
+  0.001,
+  'doubler la distance quadruple la perte'
+)
+
+// Une salle traitee rend intelligible ce qui ne l etait pas.
+const nueSti = stiDepuisAlcons(pourcentAlcons(20, 3.5, 3000, 6.83, 4))
+const traiteeSti = stiDepuisAlcons(pourcentAlcons(20, 0.6, 3000, 6.83, 20))
+verifier(
+  traiteeSti > nueSti + 0.2,
+  `STI a 20 m : ${nueSti.toFixed(2)} en salle nue contre ${traiteeSti.toFixed(2)} traitee`
+)
+
+// Les seuils sont ceux de la CEI 60268-16, et le module rend une cle.
+verifier(jugementSti(0.8) === 'sti.excellent', 'STI 0,80 : excellent')
+verifier(jugementSti(0.65) === 'sti.bon', 'STI 0,65 : bon')
+verifier(jugementSti(0.5) === 'sti.acceptable', 'STI 0,50 : acceptable')
+verifier(jugementSti(0.35) === 'sti.mediocre', 'STI 0,35 : mediocre')
+verifier(jugementSti(0.2) === 'sti.mauvais', 'STI 0,20 : mauvais')
+verifier(
+  jugementSti(0.5).startsWith('sti.'),
+  'le jugement est une cle, pas une phrase : le module ignore la langue affichee'
+)
+
+for (const [nom, appel] of [
+  ['distance negative', () => pourcentAlcons(-1, 1.5, 3000, 6.83, 5)],
+  ['volume nul', () => pourcentAlcons(10, 1.5, 0, 6.83, 5)],
+  ['directivite nulle', () => pourcentAlcons(10, 1.5, 3000, 0, 5)],
+  ['alcons negatif', () => stiDepuisAlcons(-1)]
+]) {
+  let leve = false
+  try { appel() } catch { leve = true }
+  verifier(leve, `${nom} : refuse`)
 }
 
 console.log(echecs === 0 ? '\nSALLE : TOUS LES TESTS PASSENT' : `\nSALLE : ${echecs} ÉCHEC(S)`)

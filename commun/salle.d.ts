@@ -84,3 +84,13 @@ export function analyserSalle(
   bande: number,
   ouvertureDegres: number
 ): AnalyseSalle
+
+export function pourcentAlcons(
+  distance: number,
+  rt60: number,
+  volume: number,
+  q: number,
+  distanceCritiqueM: number
+): number
+export function stiDepuisAlcons(alcons: number): number
+export function jugementSti(sti: number): string

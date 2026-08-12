@@ -152,8 +152,8 @@ données d'enceintes mesurées.
 les zones dessinées librement, les pentes, l'import CLF et CSV. Ce sont des
 fonctionnalités de saisie et de géométrie — du travail, pas de la recherche.
 
-**Ce qui ne l'est pas** : le lancer de rayons, la réverbération, l'intelligibilité
-prédite (STI), les bases de données d'enceintes mesurées du marché. Promettre
+**Ce qui ne l'est pas** : le lancer de rayons, les réflexions individuelles, les
+bases de données d'enceintes mesurées du marché. Promettre
 cela reviendrait à livrer des cartes fausses avec l'aplomb des vraies.
 
 **Ce qui est atteignable, et déjà utile :**
@@ -415,6 +415,51 @@ code : le déficit d'aire d'un polygone inscrit vaut `2π²/3n²` et non `π²/3
 des traductions réclamait la suppression de douze clés vivantes, parce qu'il ne
 lisait que `src/` alors que les libellés des formes sont nommés dans `commun/`.
 **Suivre son conseil aurait cassé l'écran.**
+
+### L'intelligibilité — écrit le 12 août 2026
+
+**Ce document disait « STI hors d'atteinte ». Ce n'est plus exact, et il fallait
+le corriger plutôt que de le laisser mentir.**
+
+Ce qui était hors d'atteinte, et le reste : le STI d'EASE, calculé à partir de
+réponses impulsionnelles obtenues par lancer de rayons. Ce qui ne l'est plus,
+depuis que le moteur de salle donne RT60, volume et directivité : **l'estimation
+de Peutz**, en forme fermée.
+
+```
+%ALcons = 200 · d² · RT60² / (V · Q)          puis   STI = 0,9482 − 0,1845 · ln(%ALcons)
+```
+
+C'est le calcul qu'un acousticien fait au dos d'une enveloppe, utile depuis
+1971. La conversion vers le STI est vérifiée contre une table publiée : 2 % vaut
+0,82, 10 % vaut 0,52, 15 % vaut 0,45.
+
+**Deux plafonds, et les deux comptent.** Au-delà de 3,16 fois la distance
+critique, la formule sature à `9 · RT60` : le champ réverbéré domine tellement
+qu'éloigner l'auditeur n'y change plus rien. Et le même plafond vaut **en deçà**,
+dans une salle petite et très réverbérante où la formule brute le dépasse et
+cesse d'avoir un sens. Ce second cas n'était couvert par aucun test au premier
+jet — le sabotage « retirer le `Math.min` » passait. Le cas qui discrimine est
+maintenant écrit : V = 1000, RT 3 s, Q 6,83, rc 5 m, à 12 m — brut 37,95 %,
+plafonné 27 %.
+
+**Ce qu'on affiche est le pire point, pas une moyenne.** Personne n'est assis à
+la moyenne, et ce qu'on veut savoir est si quelqu'un ne comprendra pas. Avec la
+part du public sous STI 0,50.
+
+Mesuré sur la salle de référence, une enceinte 90° :
+
+| Salle | RT60 | STI le pire | Public sous 0,50 |
+|---|---|---|---|
+| béton nu | 3,55 s | **0,31** — médiocre | **69 %** |
+| traitée | 0,18 s | 1,00 — excellent | 0 % |
+
+**La réserve est affichée à l'écran, et elle doit le rester** : ce n'est ni une
+mesure, ni un calcul par réponse impulsionnelle. Le modèle ignore les réflexions
+individuelles, donc **il ne voit pas un écho de fond de salle** — qui peut
+détruire l'intelligibilité sans changer ni le RT60 ni la distance critique.
+
+Six sabotages sur le calcul, tous attrapés.
 
 ### Le CLF binaire — la seule chose qui reste
 

@@ -324,6 +324,31 @@ const TEXTES = {
     en: 'Statistical diffuse-field model (Sabine, Eyring). It assumes reverberant energy is evenly spread — untrue near surfaces and in long narrow volumes. It sees neither distinct echoes nor room modes: this is not ray tracing.'
   },
 
+  // --- Intelligibilité ---
+  'sti.titre': { fr: 'Intelligibilité de la parole', en: 'Speech intelligibility' },
+  'sti.valeur': { fr: 'STI le plus bas : {sti} — {jugement}', en: 'Lowest STI: {sti} — {jugement}' },
+  'sti.partSousSeuil': {
+    fr: '{part} % du public sous STI 0,50.',
+    en: '{part}% of the audience below STI 0.50.'
+  },
+  'sti.excellent': { fr: 'excellent', en: 'excellent' },
+  'sti.bon': { fr: 'bon', en: 'good' },
+  'sti.acceptable': { fr: 'acceptable', en: 'fair' },
+  'sti.mediocre': { fr: 'médiocre', en: 'poor' },
+  'sti.mauvais': { fr: 'mauvais', en: 'bad' },
+  'sti.methode': {
+    fr: 'Estimation par la formule de Peutz — %ALcons déduit du RT60, du volume et de la directivité, puis converti en STI. C’est le calcul qu’un acousticien fait au dos d’une enveloppe.',
+    en: 'Estimated with the Peutz formula — %ALcons from RT60, volume and directivity, then converted to STI. It is the calculation an acoustician does on the back of an envelope.'
+  },
+  'sti.reserve': {
+    fr: 'Ce n’est ni une mesure, ni un calcul par réponse impulsionnelle comme le fait EASE. Le modèle ignore les réflexions individuelles : il ne voit pas un écho de fond de salle, qui peut détruire l’intelligibilité sans changer ni le RT60 ni la distance critique.',
+    en: 'This is neither a measurement nor an impulse-response calculation as EASE performs. The model ignores individual reflections: it cannot see a back-wall echo, which can destroy intelligibility without changing either RT60 or the critical distance.'
+  },
+  'sti.seuils': {
+    fr: 'Seuils de la norme CEI 60268-16. Pour de la parole, on vise 0,50 au minimum, 0,60 pour être à l’aise.',
+    en: 'Thresholds from IEC 60268-16. For speech, aim for 0.50 at minimum, 0.60 to be comfortable.'
+  },
+
   // --- Matériaux ---
   // Valeurs de tables publiées, pas des mesures : un même matériau varie
   // facilement de 30 % d'une source à l'autre selon la pose et le support.
@@ -376,6 +401,14 @@ const TEXTES = {
   'erreur.salle.ouvertureHorsLimites': {
     fr: 'L’ouverture doit être comprise entre 0 et 360°.',
     en: 'The coverage angle must be between 0 and 360°.'
+  },
+  'erreur.salle.distancePositive': {
+    fr: 'Une distance ne peut pas être négative.',
+    en: 'A distance cannot be negative.'
+  },
+  'erreur.salle.alconsPositif': {
+    fr: 'Une perte d’articulation ne peut pas être négative.',
+    en: 'An articulation loss cannot be negative.'
   },
   'erreur.salle.directivitePositive': {
     fr: 'Le facteur de directivité doit être supérieur à zéro.',

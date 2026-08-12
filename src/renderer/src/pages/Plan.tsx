@@ -13,8 +13,11 @@ import {
 import { aire, FORMES, perimetre } from '../../../../commun/formes.js'
 import {
   analyserSalle,
+  jugementSti,
   MATERIAUX,
   niveauReverbere,
+  pourcentAlcons,
+  stiDepuisAlcons,
   surfacesDepuisContour
 } from '../../../../commun/salle.js'
 import { t, traduireErreur } from '../../../partage/i18n'
@@ -265,6 +268,56 @@ export default function Plan({
       }
     }
     return total > 0 ? dehors / total : null
+  }, [analyse, couverture, enceintesCalcul])
+
+  /**
+   * L'intelligibilité de la parole, estimée par la formule de Peutz.
+   *
+   * **C'est ce qui rapproche le plus Acustika d'EASE**, et il faut être précis
+   * sur ce que ça vaut. EASE calcule un STI à partir de réponses
+   * impulsionnelles obtenues par lancer de rayons. Peutz donne une estimation
+   * en forme fermée à partir de trois choses qu'on a déjà — RT60, volume,
+   * directivité. C'est le calcul du dos d'enveloppe, et il est utile.
+   *
+   * Ce qu'on affiche, c'est **le pire point** et la part du public sous 0,50 :
+   * une moyenne de STI ne veut rien dire, parce que personne n'est assis à la
+   * moyenne. Ce qui compte est de savoir si quelqu'un ne comprendra pas.
+   */
+  const intelligibilite = useMemo(() => {
+    if (!analyse || !couverture || enceintesCalcul.length === 0) return null
+    const rt60 = analyse.rt60Eyring
+    if (!Number.isFinite(rt60) || rt60 <= 0) return null
+
+    let pire = 1
+    let total = 0
+    let sousSeuil = 0
+    for (const zone of couverture.zones) {
+      for (const point of zone.points) {
+        const plusProche = Math.min(
+          ...enceintesCalcul.map((e) =>
+            Math.hypot(e.position.x - point.x, e.position.y - point.y, e.position.z - point.z)
+          )
+        )
+        try {
+          const sti = stiDepuisAlcons(
+            pourcentAlcons(
+              plusProche,
+              rt60,
+              analyse.volume,
+              analyse.facteurDirectivite,
+              analyse.distanceCritique
+            )
+          )
+          total += 1
+          if (sti < pire) pire = sti
+          if (sti < 0.5) sousSeuil += 1
+        } catch {
+          // Un point impossible à évaluer ne doit pas emporter tout l'écran.
+        }
+      }
+    }
+    if (total === 0) return null
+    return { pire, partSousSeuil: sousSeuil / total }
   }, [analyse, couverture, enceintesCalcul])
 
   /** Échelle : combien de pixels pour un mètre. */
@@ -1233,6 +1286,26 @@ export default function Plan({
                         })}
                       </p>
                       <p className="discret">{t('salle.partHorsCritiqueExplication')}</p>
+                    </>
+                  )}
+
+                  {intelligibilite && (
+                    <>
+                      <h3>{t('sti.titre')}</h3>
+                      <p className="avertissement">
+                        {t('sti.valeur', {
+                          sti: intelligibilite.pire.toFixed(2),
+                          jugement: t(jugementSti(intelligibilite.pire) as Parameters<typeof t>[0])
+                        })}
+                      </p>
+                      <p>
+                        {t('sti.partSousSeuil', {
+                          part: (intelligibilite.partSousSeuil * 100).toFixed(0)
+                        })}
+                      </p>
+                      <p className="discret">{t('sti.seuils')}</p>
+                      <p className="discret">{t('sti.methode')}</p>
+                      <p className="discret">{t('sti.reserve')}</p>
                     </>
                   )}
                   <p className="discret">{t('salle.modeleStatistique')}</p>

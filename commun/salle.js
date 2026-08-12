@@ -353,3 +353,76 @@ export function analyserSalle(volume, surfaces, bande, ouvertureDegres) {
     distanceCritique: distanceCritique(q, r)
   }
 }
+
+/* ── L'intelligibilité ──────────────────────────────────────────────────── */
+
+/**
+ * Perte d'articulation des consonnes, en pourcent — formule de Peutz.
+ *
+ * **C'est le pas le plus proche d'EASE que ce modèle permette**, et il faut
+ * être précis sur ce que ça vaut. EASE calcule un STI à partir de réponses
+ * impulsionnelles complètes, obtenues par lancer de rayons. Peutz, lui, donne
+ * une estimation en forme fermée à partir de trois choses qu'on a déjà : le
+ * temps de réverbération, le volume et la directivité. C'est le calcul qu'un
+ * acousticien fait au dos d'une enveloppe, et il est utile depuis 1971.
+ *
+ * %ALcons = 200 · d² · RT60² / (V · Q)
+ *
+ * **Au-delà de 3,16 fois la distance critique, la formule sature** à 9 · RT60 :
+ * le champ réverbéré domine tellement qu'éloigner l'auditeur n'y change plus
+ * rien. Sans ce plafond, la formule donnerait des valeurs absurdes au fond
+ * d'une grande salle — un défaut connu qu'il faut traiter, pas ignorer.
+ *
+ * Plus le nombre est petit, mieux on comprend : 2 % est excellent, 15 % est la
+ * limite du tolérable pour de la parole.
+ */
+export function pourcentAlcons(distance, rt60, volume, q, distanceCritiqueM) {
+  if (!(distance >= 0)) throw new Error('salle.distancePositive')
+  if (!(volume > 0)) throw new Error('salle.volumePositif')
+  if (!(q > 0)) throw new Error('salle.directivitePositive')
+  // Une salle sans réverbération ne dégrade rien : l'articulation est parfaite.
+  if (!(rt60 > 0)) return 0
+
+  const sature = 9 * rt60
+  if (distanceCritiqueM > 0 && distance > 3.16 * distanceCritiqueM) return sature
+
+  const valeur = (200 * distance * distance * rt60 * rt60) / (volume * q)
+  // Le plafond vaut aussi en deçà : la formule peut le dépasser dans une salle
+  // petite et très réverbérante, où elle cesse d'avoir un sens.
+  return Math.min(valeur, sature)
+}
+
+/**
+ * Indice de transmission de la parole, déduit de %ALcons.
+ *
+ * STI = 0,9482 − 0,1845 · ln(%ALcons). C'est la conversion publiée qui relie
+ * les deux échelles ; elle redonne bien les correspondances de table — 2 % vaut
+ * 0,82, 10 % vaut 0,52, 15 % vaut 0,45.
+ *
+ * **Ce STI est une estimation issue d'un modèle statistique**, pas une mesure
+ * ni un calcul par réponse impulsionnelle. Il ignore les réflexions
+ * individuelles, donc il ne voit pas un écho de fond de salle — qui peut
+ * détruire l'intelligibilité sans changer ni le RT60 ni la distance critique.
+ * L'écran doit le dire, et il le dit.
+ */
+export function stiDepuisAlcons(alcons) {
+  if (!(alcons >= 0)) throw new Error('salle.alconsPositif')
+  // Une articulation parfaite : la formule diverge en zéro, l'échelle plafonne
+  // de toute façon à 1.
+  if (alcons <= 0) return 1
+  return Math.min(1, Math.max(0, 0.9482 - 0.1845 * Math.log(alcons)))
+}
+
+/**
+ * Le jugement qui accompagne un STI, sous forme de clé.
+ *
+ * Les seuils sont ceux de la norme CEI 60268-16. Ce module ne sait pas quelle
+ * langue la fenêtre affiche : il rend une clé, pas une phrase.
+ */
+export function jugementSti(sti) {
+  if (sti >= 0.75) return 'sti.excellent'
+  if (sti >= 0.6) return 'sti.bon'
+  if (sti >= 0.45) return 'sti.acceptable'
+  if (sti >= 0.3) return 'sti.mediocre'
+  return 'sti.mauvais'
+}
