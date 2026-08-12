@@ -14,11 +14,18 @@
  * d'être compilée pour atteindre l'un des trois finit dupliquée le jour où
  * l'outil gêne.
  *
- * **Ce que ce module ne fait pas encore**, et qu'il ne faut pas laisser croire :
- * il ignore les réflexions sur les parois, la réverbération, et la directivité
- * dépendante de la fréquence au-delà de ce qu'on lui donne. Il calcule un champ
- * direct. C'est déjà utile — c'est ce qui décide d'un placement — mais ce n'est
- * pas une simulation de salle.
+ * **Ce module calcule le champ direct.** La salle, elle, vit dans `salle.js` :
+ * absorption, RT60, constante de salle, distance critique. Le champ réverbéré
+ * qu'il en déduit entre ici par le paramètre `niveauReverbereDb` de
+ * `niveauTotal()`, **et par lui seul** — c'est ce qui garantit que la carte, la
+ * coupe et le conseil de placement voient tous la même salle.
+ *
+ * **Ce que l'ensemble ne fait toujours pas**, et qu'il ne faut pas laisser
+ * croire : les réflexions individuelles, les échos francs, les modes propres du
+ * grave, le déphasage entre sources. Le champ diffus est traité
+ * statistiquement — Sabine et Eyring — donc supposé uniformément réparti, ce
+ * qui est faux près des parois et dans un volume long et étroit. **Ce n'est pas
+ * du lancer de rayons**, et ça ne prétend pas l'être.
  */
 
 /** Bandes d'octave retenues, en hertz. */
@@ -203,15 +210,37 @@ export function niveauEnUnPoint(enceinte, cible, bande) {
   return niveauADistance(enceinte.niveau1m, d) + attenuationAngulaire(angle, ouverture)
 }
 
-/** Niveau total de plusieurs enceintes en un point, pour une bande donnée. */
+/**
+ * Niveau total de plusieurs enceintes en un point, pour une bande donnée.
+ *
+ * `niveauReverbereDb` ajoute le **champ diffus de la salle**, calculé par
+ * `salle.js`. Il est uniforme par définition — il ne dépend pas du point — donc
+ * il entre ici comme un plancher constant sous le champ direct. C'est ce qui
+ * fait qu'au-delà de la distance critique la carte cesse de s'assombrir : le
+ * réverbéré prend le dessus, et pousser le niveau n'y change plus rien.
+ *
+ * **C'est le seul endroit où la salle entre dans le calcul**, et c'est
+ * volontaire : la carte, la coupe, les statistiques et le conseil de placement
+ * passent tous par cette fonction. L'ajouter dans l'un d'eux seulement aurait
+ * donné une carte et un conseil qui se contredisent — le pire cas, parce que
+ * l'utilisateur croirait l'un ou l'autre sans savoir lequel.
+ *
+ * Le défaut `-Infinity` vaut « pas de champ réverbéré » : son énergie est nulle,
+ * la somme est donc inchangée. Un plein air, ou une salle non décrite, calcule
+ * exactement comme avant.
+ */
 /**
  * @param {Enceinte[]} enceintes
  * @param {Point} cible
  * @param {number} bande
+ * @param {number} [niveauReverbereDb]
  * @returns {number}
  */
-export function niveauTotal(enceintes, cible, bande) {
-  return additionnerNiveaux(enceintes.map((e) => niveauEnUnPoint(e, cible, bande)))
+export function niveauTotal(enceintes, cible, bande, niveauReverbereDb = -Infinity) {
+  const directs = enceintes.map((e) => niveauEnUnPoint(e, cible, bande))
+  return additionnerNiveaux(
+    Number.isFinite(niveauReverbereDb) ? [...directs, niveauReverbereDb] : directs
+  )
 }
 
 /**
@@ -281,7 +310,7 @@ export function retardDAppoint(
  * @param {number} [pas] Résolution en mètres. 0,5 m suffit à l'œil.
  * @returns {Carte}
  */
-export function calculerCarte(salle, enceintes, bande, pas = 0.5) {
+export function calculerCarte(salle, enceintes, bande, pas = 0.5, niveauReverbereDb = -Infinity) {
   if (pas <= 0) throw new Error('Le pas de la grille doit être supérieur à zéro.')
   if (salle.largeur <= 0 || salle.profondeur <= 0) {
     throw new Error('Les dimensions de la salle doivent être supérieures à zéro.')
@@ -309,7 +338,7 @@ export function calculerCarte(salle, enceintes, bande, pas = 0.5) {
         y: (j + 0.5) * pas,
         z: salle.hauteurOreilles
       }
-      const niveau = niveauTotal(enceintes, cible, bande)
+      const niveau = niveauTotal(enceintes, cible, bande, niveauReverbereDb)
       ligne.push(niveau)
       if (niveau < minimum) minimum = niveau
       if (niveau > maximum) maximum = niveau
@@ -455,7 +484,7 @@ export function encadrement(contour) {
  * @param {number} [pas]
  * @returns {CouvertureZone}
  */
-export function couvertureZone(zone, enceintes, bande, pas = 0.5) {
+export function couvertureZone(zone, enceintes, bande, pas = 0.5, niveauReverbereDb = -Infinity) {
   if (pas <= 0) throw new Error('Le pas de la grille doit être supérieur à zéro.')
   if (zone.contour.length < 3) {
     throw new Error(`La zone « ${zone.nom} » doit avoir au moins trois sommets.`)
@@ -474,7 +503,7 @@ export function couvertureZone(zone, enceintes, bande, pas = 0.5) {
       if (!pointDansPolygone(zone.contour, { x, y })) continue
 
       const z = altitudeDuSol(zone, { x, y }) + zone.hauteurOreilles
-      const niveau = niveauTotal(enceintes, { x, y, z }, bande)
+      const niveau = niveauTotal(enceintes, { x, y, z }, bande, niveauReverbereDb)
       points.push({ x, y, z, niveau })
       if (niveau < minimum) minimum = niveau
       if (niveau > maximum) maximum = niveau
@@ -511,10 +540,12 @@ export function couvertureZone(zone, enceintes, bande, pas = 0.5) {
  * @param {number} [pas]
  * @returns {{ zones: CouvertureZone[], minimum: number, maximum: number, ecart: number }}
  */
-export function couvertureSalle(zones, enceintes, bande, pas = 0.5) {
+export function couvertureSalle(zones, enceintes, bande, pas = 0.5, niveauReverbereDb = -Infinity) {
   if (zones.length === 0) throw new Error('Il faut au moins une zone d’écoute.')
 
-  const calculees = zones.map((zone) => couvertureZone(zone, enceintes, bande, pas))
+  const calculees = zones.map((zone) =>
+    couvertureZone(zone, enceintes, bande, pas, niveauReverbereDb)
+  )
   const minimum = Math.min(...calculees.map((z) => z.minimum))
   const maximum = Math.max(...calculees.map((z) => z.maximum))
 
@@ -665,7 +696,7 @@ export function appliquerReglage(enceintes, reglage) {
  * @param {number} [pas] Résolution de la grille, en mètres.
  * @returns {Conseil}
  */
-export function conseillerPlacement(zones, enceintes, bande, pas = 1) {
+export function conseillerPlacement(zones, enceintes, bande, pas = 1, niveauReverbereDb = -Infinity) {
   if (zones.length === 0) throw new Error('Il faut au moins une zone d’écoute pour conseiller un placement.')
   if (enceintes.length === 0) throw new Error('Il faut au moins une enceinte pour conseiller un placement.')
 
@@ -674,7 +705,8 @@ export function conseillerPlacement(zones, enceintes, bande, pas = 1) {
   const portee = distanceMaximale(zones, centre) || 1
 
   const ecartDe = (reglage) =>
-    couvertureSalle(zones, appliquerReglage(enceintes, reglage), bande, pas).ecart
+    couvertureSalle(zones, appliquerReglage(enceintes, reglage), bande, pas, niveauReverbereDb)
+      .ecart
 
   const ecartActuel = ecartDe(actuel)
 
@@ -842,7 +874,7 @@ export function retardsDAlignement(
  * @param {number} [pas]
  * @returns {Coupe}
  */
-export function profilCoupe(zones, enceintes, x, bande, pas = 0.5) {
+export function profilCoupe(zones, enceintes, x, bande, pas = 0.5, niveauReverbereDb = -Infinity) {
   if (pas <= 0) throw new Error('Le pas de la coupe doit être supérieur à zéro.')
   if (zones.length === 0) throw new Error('Il faut au moins une zone d’écoute pour une coupe.')
 
@@ -876,7 +908,9 @@ export function profilCoupe(zones, enceintes, x, bande, pas = 0.5) {
     const sol = altitudeDuSol(zone, cible)
     const oreilles = sol + zone.hauteurOreilles
     const niveau =
-      enceintes.length === 0 ? null : niveauTotal(enceintes, { x, y, z: oreilles }, bande)
+      enceintes.length === 0
+        ? null
+        : niveauTotal(enceintes, { x, y, z: oreilles }, bande, niveauReverbereDb)
     points.push({ y, sol, oreilles, niveau })
   }
 

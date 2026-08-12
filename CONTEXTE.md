@@ -334,6 +334,88 @@ incapable d'échouer.
 
 *Réserve : ce texte est clair et honnête, il n'est pas validé par un juriste.*
 
+### La salle — écrit le 12 août 2026
+
+**C'est ce qui manquait le plus pour se rapprocher d'EASE.** Jusque-là Acustika
+calculait un champ direct et rien d'autre : **la même carte sortait pour une
+église et pour un studio traité**, alors que ce sont deux salles opposées.
+
+`commun/salle.js` ajoute le champ diffus : douze matériaux avec leurs
+coefficients par bande, aire d'absorption, **RT60 Sabine et Eyring**, constante
+de salle, facteur de directivité, **distance critique**, et le niveau réverbéré
+qui en découle. Les surfaces se déduisent du contour des zones — sol, plafond,
+murs — et le public se compte **à l'unité, pas au mètre carré** : un spectateur
+n'a pas de surface au sol, il a une absorption propre, et une salle pleine peut
+avoir deux fois l'absorption de la même salle vide.
+
+**Le champ réverbéré entre dans le calcul par un seul point** :
+`niveauTotal(..., niveauReverbereDb)` dans `acoustique.js`. Carte, coupe,
+statistiques et conseil passent tous par là. L'ajouter dans un seul d'entre eux
+aurait donné une carte et un conseil qui se contredisent — le pire cas, parce
+que l'utilisateur croirait l'un ou l'autre sans savoir lequel.
+
+#### Le piège trouvé en le mesurant, et qui renverse tout
+
+**L'écart de niveau devient trompeur dès que la salle est prise en compte.** Le
+champ réverbéré est uniforme : ajouté à la carte, il écrase les écarts. Mesuré
+sur une salle de 20 × 30 × 8 m, une enceinte 90° :
+
+| Salle | RT60 | Écart de niveau | Public au-delà de rc |
+|---|---|---|---|
+| béton nu | 3,55 s | **1,3 dB** — semble parfait | **98 %** |
+| traitée | 0,18 s | **12,8 dB** — semble mauvais | **0 %** |
+
+Les deux mesures pointent **en sens opposé**. Le conseil de placement retenant
+le placement dont l'écart est le plus faible, le brancher sur l'écart réverbéré
+lui aurait fait préférer la cathédrale — avec l'air d'avoir raison.
+
+Deux règles en découlent, et `tests/salle.mjs` les protège :
+
+1. **Le conseil raisonne sur le champ direct seul.** C'est le seul qu'un
+   placement contrôle ; la réverbération se corrige en traitant la salle ou en
+   rapprochant une source.
+2. **La mesure honnête est la part du public au-delà de la distance critique**,
+   affichée à côté de l'écart, avec la mise en garde que l'écart ne mesure plus
+   la qualité du placement.
+
+#### Ce que ce modèle n'est pas
+
+Champ diffus **statistique** : il suppose l'énergie réverbérée uniformément
+répartie, ce qui est faux près des parois et dans un volume long et étroit. Il
+ne voit ni écho franc, ni mode propre du grave, ni diffusion. **Ce n'est pas du
+lancer de rayons**, et le module le dit en tête.
+
+Le facteur de directivité est **approché par un cône**, `Q = 2 / (1 − cos(θ/2))`,
+faute de mieux : Acustika ne connaît des enceintes que leur ouverture par bande.
+Ce Q est donc optimiste, donc le champ réverbéré réel est un peu plus fort que
+calculé. C'est écrit dans le code.
+
+Les coefficients d'absorption sont des **valeurs de tables publiées, pas des
+mesures** : un même matériau varie de 30 % d'une source à l'autre selon la pose
+et le support. L'écran le dit.
+
+**La salle est décrite mais inactive dans un projet neuf.** Des matériaux par
+défaut donneraient une réverbération inventée, et une carte fausse est pire
+qu'une carte incomplète : elle a l'aplomb de la vraie.
+
+### Les formes préfaites — écrit le 12 août 2026
+
+Rectangle, carré, cercle, demi-cercle, éventail et fer à cheval, dans
+`commun/formes.js`. **Un rectangle dessiné point par point n'en est pas un** :
+les côtés ne sont pas parallèles, l'aire est fausse de quelques pour cent, et
+toute la couverture — et maintenant toute la réverbération — hérite de cette
+approximation.
+
+La table `FORMES` est la seule source : l'interface la parcourt pour construire
+ses boutons et ses champs, donc aucune liste ne peut diverger des fonctions.
+
+**Deux erreurs attrapées par des valeurs calculées à part**, et non reprises du
+code : le déficit d'aire d'un polygone inscrit vaut `2π²/3n²` et non `π²/3n²`
+— j'avais écrit la moitié du vrai dans mon propre commentaire ; et le contrôle
+des traductions réclamait la suppression de douze clés vivantes, parce qu'il ne
+lisait que `src/` alors que les libellés des formes sont nommés dans `commun/`.
+**Suivre son conseil aurait cassé l'écran.**
+
 ### Le CLF binaire — la seule chose qui reste
 
 **Deux vrais fichiers sont dans `tests/fichiers/`** : `cls-3300.CF1` et

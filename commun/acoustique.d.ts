@@ -65,7 +65,12 @@ export function additionnerNiveaux(niveaux: number[]): number
 export function attenuationAngulaire(angleDegres: number, ouvertureDegres: number): number
 export function angleDepuisAxe(source: Point, axe: Point, cible: Point): number
 export function niveauEnUnPoint(enceinte: Enceinte, cible: Point, bande: number): number
-export function niveauTotal(enceintes: Enceinte[], cible: Point, bande: number): number
+export function niveauTotal(
+  enceintes: Enceinte[],
+  cible: Point,
+  bande: number,
+  niveauReverbereDb?: number
+): number
 export function retardDAppoint(
   distancePrincipale: number,
   distanceAppoint: number,
@@ -84,13 +89,15 @@ export function couvertureZone(
   zone: Zone,
   enceintes: Enceinte[],
   bande: number,
-  pas?: number
+  pas?: number,
+  niveauReverbereDb?: number
 ): CouvertureZone
 export function couvertureSalle(
   zones: Zone[],
   enceintes: Enceinte[],
   bande: number,
-  pas?: number
+  pas?: number,
+  niveauReverbereDb?: number
 ): { zones: CouvertureZone[]; minimum: number; maximum: number; ecart: number }
 
 export interface Reglage {
@@ -123,7 +130,8 @@ export function conseillerPlacement(
   zones: Zone[],
   enceintes: Enceinte[],
   bande: number,
-  pas?: number
+  pas?: number,
+  niveauReverbereDb?: number
 ): Conseil
 
 export interface RetardCalcule {
@@ -168,5 +176,6 @@ export function profilCoupe(
   enceintes: Enceinte[],
   x: number,
   bande: number,
-  pas?: number
+  pas?: number,
+  niveauReverbereDb?: number
 ): Coupe

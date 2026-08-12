@@ -3,7 +3,8 @@
 // On ne lance pas Electron ici — ce serait long et fragile. On vérifie les
 // règles qui, si elles cassaient, donneraient une application qui a l'air de
 // marcher tout en produisant des résultats faux ou en perdant du travail.
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -47,11 +48,75 @@ verifier(
   'un projet plus récent que l’application est refusé, pas tronqué',
   projet.includes('version plus récente')
 )
-// À l'inverse, un projet ancien à qui il manque un champ doit s'ouvrir.
-verifier(
-  'un projet ancien reçoit les champs manquants',
-  projet.includes('...projetVide(), ...projet')
-)
+/**
+ * À l'inverse, un projet ancien à qui il manque un champ doit s'ouvrir.
+ *
+ * **Ce contrôle comparait une chaîne du code source** — `...projetVide(), ...projet` —
+ * et il a échoué le jour où la même fusion a été écrite sur plusieurs lignes.
+ * Le code était juste, le test disait non. Un contrôle qui ne distingue pas une
+ * régression d'un retour à la ligne finit par être contourné, et c'est alors
+ * qu'il laissera passer la vraie régression.
+ *
+ * Il ouvre donc maintenant **un vrai fichier**. Node 24 dépouille les types, si
+ * bien que le domaine s'importe tel quel, sans compilation ni empaqueteur.
+ */
+const dossierTemporaire = mkdtempSync(join(tmpdir(), 'acustika-'))
+try {
+  const { lireProjet } = await import('../src/main/domaines/projet.ts')
+
+  // Un projet d'avant la salle : ni `salle`, ni `bande`.
+  const ancien = join(dossierTemporaire, 'ancien.acustika')
+  writeFileSync(
+    ancien,
+    JSON.stringify({
+      nom: 'Ancien',
+      largeur: 10,
+      profondeur: 10,
+      zones: [],
+      enceintes: [],
+      version: 1
+    }),
+    'utf-8'
+  )
+  const relu = lireProjet(ancien)
+  verifier('un projet ancien s’ouvre au lieu d’être refusé', relu.nom === 'Ancien')
+  verifier('un champ absent reçoit sa valeur par défaut', relu.bande === 1000)
+  verifier('la salle absente est créée', typeof relu.salle === 'object' && relu.salle !== null)
+  verifier(
+    'une salle créée d’office est inactive',
+    relu.salle?.active === false,
+    'des matériaux inventés donneraient une réverbération inventée'
+  )
+
+  // Une salle **partielle** : le piège que la fusion superficielle laisse passer.
+  // Sans fusion en profondeur, `spectateurs` resterait indéfini et l'absorption
+  // deviendrait NaN — silencieusement, en contaminant toute la carte.
+  const partiel = join(dossierTemporaire, 'partiel.acustika')
+  writeFileSync(
+    partiel,
+    JSON.stringify({
+      nom: 'Partiel',
+      largeur: 10,
+      profondeur: 10,
+      zones: [],
+      enceintes: [],
+      bande: 1000,
+      salle: { hauteur: 8, active: true },
+      version: 1
+    }),
+    'utf-8'
+  )
+  const reluPartiel = lireProjet(partiel)
+  verifier('une salle partielle garde ce qui était écrit', reluPartiel.salle?.hauteur === 8)
+  verifier(
+    'une salle partielle complète ce qui manquait',
+    typeof reluPartiel.salle?.spectateurs === 'number' &&
+      typeof reluPartiel.salle?.sol === 'string',
+    'sinon l’absorption vaudrait NaN sans que rien ne le signale'
+  )
+} finally {
+  rmSync(dossierTemporaire, { recursive: true, force: true })
+}
 
 console.log('\n=== Rien ne se perd en silence ===')
 

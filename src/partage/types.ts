@@ -60,6 +60,43 @@ export interface ZoneEcoute {
   directionPenteDegres: number
 }
 
+/**
+ * La salle elle-même : ce qui absorbe, et combien.
+ *
+ * **Sans elle, Acustika calculait la même carte pour une église et pour un
+ * studio traité.** Le champ direct ne dépend pas des murs ; tout le reste si.
+ *
+ * Le modèle est statistique — Sabine, Eyring, constante de salle — donc il
+ * suppose l'énergie réverbérée uniformément répartie. C'est faux près des
+ * parois et dans un volume long et étroit, et c'est écrit dans les conditions
+ * d'utilisation. Ce n'est pas du lancer de rayons, et ça ne prétend pas l'être.
+ */
+export interface Salle {
+  /** Hauteur sous plafond, en mètres — elle donne le volume et les murs. */
+  hauteur: number
+  /** Matériaux des trois grandes surfaces, par identifiant. */
+  sol: string
+  plafond: string
+  murs: string
+  /**
+   * Nombre de spectateurs assis.
+   *
+   * Ils se comptent à l'unité, pas au mètre carré : un spectateur n'a pas de
+   * surface au sol, il a une absorption propre. Une salle pleine peut avoir
+   * deux fois l'absorption de la même salle vide — c'est la première cause
+   * d'écart entre une balance faite à vide et le résultat en représentation.
+   */
+  spectateurs: number
+  /**
+   * Prendre la réverbération en compte dans la carte.
+   *
+   * Réglable, parce qu'un plein air n'a pas de salle du tout et qu'un
+   * utilisateur qui n'a pas encore décrit ses matériaux ne doit pas voir une
+   * carte fausse par des valeurs par défaut.
+   */
+  active: boolean
+}
+
 export interface Projet {
   nom: string
   /** Emprise du plan, en mètres. Sert au cadrage, pas au calcul. */
@@ -69,6 +106,12 @@ export interface Projet {
   enceintes: EnceintePlacee[]
   /** Bande d'octave affichée. */
   bande: number
+  /**
+   * La salle. **Facultative** : les projets enregistrés avant son arrivée n'en
+   * ont pas, et doivent continuer de s'ouvrir. Un fichier qu'on ne sait plus
+   * relire est une perte de travail, pas une montée de version.
+   */
+  salle?: Salle
   /** Version du format de fichier, pour pouvoir le faire évoluer sans perte. */
   version: number
 }

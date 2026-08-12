@@ -10,7 +10,13 @@ import {
   type Effet,
   type RetardCalcule
 } from '../../../../commun/acoustique.js'
-import { aire, FORMES } from '../../../../commun/formes.js'
+import { aire, FORMES, perimetre } from '../../../../commun/formes.js'
+import {
+  analyserSalle,
+  MATERIAUX,
+  niveauReverbere,
+  surfacesDepuisContour
+} from '../../../../commun/salle.js'
 import { t, traduireErreur } from '../../../partage/i18n'
 import type {
   EnceintePlacee,
@@ -134,6 +140,76 @@ export default function Plan({
     [projet.enceintes, modeleParId]
   )
 
+  /* ── La salle ─────────────────────────────────────────────────────────── */
+
+  const salle = projet.salle
+
+  function modifierSalle(champs: Partial<NonNullable<Projet['salle']>>): void {
+    if (!salle) return
+    modifierProjet({ ...projet, salle: { ...salle, ...champs } })
+  }
+
+  /**
+   * L'analyse de la salle dans la bande affichée.
+   *
+   * Les surfaces sont déduites du contour **des zones réunies** : c'est
+   * l'emprise réelle du volume, alors que `projet.largeur × profondeur` n'est
+   * qu'un cadrage d'affichage. Une salle décrite par ses zones donne donc les
+   * bons murs sans qu'on ait rien à ressaisir.
+   *
+   * L'ouverture retenue est celle de la première enceinte active : le facteur
+   * de directivité sert à situer la distance critique, et la donner par
+   * enceinte multiplierait les chiffres sans rien apporter — on veut savoir si
+   * la salle est un problème, pas comparer six rayons.
+   */
+  const analyse = useMemo(() => {
+    if (!salle?.active || projet.zones.length === 0) return null
+
+    const aireAuSol = projet.zones.reduce((total, zone) => total + aire(zone.contour), 0)
+    const perimetreTotal = projet.zones.reduce((total, zone) => total + perimetre(zone.contour), 0)
+    if (!(aireAuSol > 0) || !(perimetreTotal > 0)) return null
+
+    const premiere = enceintesCalcul[0]
+    const ouverture = premiere?.ouverture?.[projet.bande] ?? 90
+
+    try {
+      const surfaces = [
+        ...surfacesDepuisContour(aireAuSol, perimetreTotal, salle.hauteur, {
+          sol: salle.sol,
+          plafond: salle.plafond,
+          murs: salle.murs
+        }),
+        { materiauId: 'publicAssis', nombre: salle.spectateurs }
+      ]
+      const volume = aireAuSol * salle.hauteur
+      const resultat = analyserSalle(volume, surfaces, projet.bande, ouverture)
+
+      /**
+       * Le champ réverbéré total, somme énergétique de toutes les enceintes.
+       *
+       * **Chaque enceinte excite la salle selon sa propre directivité**, pas
+       * selon celle de la première : une 40° et une 120° au même niveau à un
+       * mètre n'y versent pas la même énergie. Prendre une seule ouverture pour
+       * tout le monde sous-estimerait la soupe d'un système mixte — exactement
+       * le cas où l'on a besoin du chiffre.
+       */
+      const energie = enceintesCalcul.reduce((total, e) => {
+        const ouvertureE = e.ouverture?.[projet.bande]
+        if (ouvertureE === undefined) return total
+        const niveau = niveauReverbere(e.niveau1m, ouvertureE, resultat.constanteSalle)
+        return Number.isFinite(niveau) ? total + 10 ** (niveau / 10) : total
+      }, 0)
+      const reverbere = energie > 0 ? 10 * Math.log10(energie) : -Infinity
+
+      return { ...resultat, volume, ouverture, reverbere }
+    } catch {
+      // Une salle mal décrite ne doit pas casser l'écran : la carte reste en
+      // champ direct, et le panneau affichera que la salle n'est pas prise en
+      // compte. Un plantage ici masquerait tout le reste du travail.
+      return null
+    }
+  }, [salle, projet.zones, projet.bande, enceintesCalcul])
+
   const couverture = useMemo(() => {
     if (projet.zones.length === 0 || enceintesCalcul.length === 0) return null
     try {
@@ -145,12 +221,51 @@ export default function Plan({
         pentePourcent: z.pentePourcent,
         directionPenteDegres: z.directionPenteDegres
       }))
-      return couvertureSalle(zones, enceintesCalcul, projet.bande, 0.4)
+      return couvertureSalle(zones, enceintesCalcul, projet.bande, 0.4, analyse?.reverbere)
     } catch (e) {
       setErreur(traduireErreur((e as Error).message))
       return null
     }
-  }, [projet.zones, projet.bande, enceintesCalcul])
+    // `analyse` est une dépendance à part entière : sans elle, changer un
+    // matériau ou cocher « tenir compte de la salle » ne redessinerait rien.
+    // Le code serait juste et l'écran figé — la pire des deux.
+  }, [projet.zones, projet.bande, enceintesCalcul, analyse])
+
+  /**
+   * La part du public assise au-delà de la distance critique.
+   *
+   * **C'est la mesure honnête d'une salle, et elle remplace l'écart** dès que la
+   * réverbération entre en jeu. Le champ réverbéré étant uniforme, il aplatit
+   * l'écart de niveau : une salle à 3,5 s de RT60 affiche un écart d'un
+   * décibel, ce qui ressemble à une couverture parfaite et n'en est pas une.
+   *
+   * Ce qui compte alors n'est plus « le niveau est-il régulier » mais « qui
+   * entend encore la source plutôt que la salle ». Au-delà de la distance
+   * critique, monter le gain n'améliore plus rien : il faut rapprocher une
+   * source, ou traiter la salle.
+   */
+  const partHorsCritique = useMemo(() => {
+    if (!analyse || !couverture || enceintesCalcul.length === 0) return null
+    const rc = analyse.distanceCritique
+    if (!Number.isFinite(rc) || rc <= 0) return null
+
+    let total = 0
+    let dehors = 0
+    for (const zone of couverture.zones) {
+      for (const point of zone.points) {
+        total += 1
+        // La distance à l'enceinte **la plus proche** : c'est elle qui fournit
+        // le champ direct dominant en ce point.
+        const plusProche = Math.min(
+          ...enceintesCalcul.map((e) =>
+            Math.hypot(e.position.x - point.x, e.position.y - point.y, e.position.z - point.z)
+          )
+        )
+        if (plusProche > rc) dehors += 1
+      }
+    }
+    return total > 0 ? dehors / total : null
+  }, [analyse, couverture, enceintesCalcul])
 
   /** Échelle : combien de pixels pour un mètre. */
   const echelle = useCallback(() => {
@@ -504,6 +619,19 @@ export default function Plan({
           pentePourcent: z.pentePourcent,
           directionPenteDegres: z.directionPenteDegres
         }))
+        // **Le conseil raisonne sur le champ direct seul, et il le faut.**
+        //
+        // Le champ réverbéré est uniforme : ajouté à la carte, il écrase les
+        // écarts. Dans une salle à 3,5 s de RT60, l'écart mesuré tombe de 20 dB
+        // à 1 dB — et comme le conseil retient le placement dont l'écart est le
+        // plus faible, il conclurait qu'une cathédrale est parfaitement
+        // couverte. Un niveau plat obtenu par la réverbération n'est pas une
+        // bonne couverture, c'est de la soupe.
+        //
+        // Ce qu'un placement peut réellement contrôler, c'est le champ direct.
+        // La réverbération, elle, se corrige en traitant la salle ou en
+        // rapprochant une source — ce que dit la distance critique affichée à
+        // côté. Vérifié en le mesurant, pas en le supposant.
         setConseil(conseillerPlacement(zones, enceintesCalcul, projet.bande, 1))
       } catch (e) {
         setErreur(traduireErreur((e as Error).message))
@@ -568,14 +696,14 @@ export default function Plan({
         pentePourcent: z.pentePourcent,
         directionPenteDegres: z.directionPenteDegres
       }))
-      return profilCoupe(zones, enceintesCalcul, xCoupe, projet.bande, 0.4)
+      return profilCoupe(zones, enceintesCalcul, xCoupe, projet.bande, 0.4, analyse?.reverbere)
     } catch {
       // La coupe est un confort : si elle ne peut pas être tracée, on ne
       // dérange pas l'utilisateur avec une erreur — la carte, elle, l'aurait
       // déjà signalée.
       return null
     }
-  }, [coupeVisible, projet.zones, projet.bande, enceintesCalcul, xCoupe])
+  }, [coupeVisible, projet.zones, projet.bande, enceintesCalcul, xCoupe, analyse])
 
   const [retards, setRetards] = useState<RetardCalcule[] | null>(null)
 
@@ -864,6 +992,9 @@ export default function Plan({
                 <span>{t('plan.ecartSalle')}</span>
               </p>
               <p className="discret">{t('plan.ecartExplication')}</p>
+              {salle?.active && analyse && (
+                <p className="avertissement">{t('salle.ecartTrompeur')}</p>
+              )}
 
               <table>
                 <thead>
@@ -1020,6 +1151,94 @@ export default function Plan({
               >
                 {t('plan.retirerEnceinte')}
               </button>
+            </>
+          )}
+
+          {salle && (
+            <>
+              <h2>{t('salle.titre')}</h2>
+
+              <label className="conditions-case">
+                <input
+                  type="checkbox"
+                  checked={salle.active}
+                  onChange={(e) => modifierSalle({ active: e.target.checked })}
+                />
+                {t('salle.active')}
+              </label>
+
+              {!salle.active && <p className="discret">{t('salle.inactive')}</p>}
+
+              <label>
+                {t('salle.hauteur')}
+                <input
+                  type="number"
+                  min="1"
+                  step="0.5"
+                  value={salle.hauteur}
+                  onChange={(e) => modifierSalle({ hauteur: Number(e.target.value) })}
+                />
+              </label>
+
+              {(['sol', 'plafond', 'murs'] as const).map((surface) => (
+                <label key={surface}>
+                  {t(`salle.${surface}` as Parameters<typeof t>[0])}
+                  <select
+                    value={salle[surface]}
+                    onChange={(e) => modifierSalle({ [surface]: e.target.value })}
+                  >
+                    {MATERIAUX.filter((m) => m.parUnite === 'surface').map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {t(m.cle as Parameters<typeof t>[0])}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+
+              <label>
+                {t('salle.spectateurs')}
+                <input
+                  type="number"
+                  min="0"
+                  step="10"
+                  value={salle.spectateurs}
+                  onChange={(e) => modifierSalle({ spectateurs: Number(e.target.value) })}
+                />
+              </label>
+              <p className="discret">{t('salle.spectateursExplication')}</p>
+
+              {analyse && (
+                <div className="analyse-salle">
+                  <p>{t('salle.volume', { volume: analyse.volume.toFixed(0) })}</p>
+                  <p>{t('salle.aireAbsorption', { aire: analyse.aireAbsorption.toFixed(0) })}</p>
+                  <p>
+                    {t('salle.rt60', {
+                      sabine: analyse.rt60Sabine.toFixed(2),
+                      eyring: analyse.rt60Eyring.toFixed(2)
+                    })}
+                  </p>
+                  <p className="discret">{t('salle.rt60Explication')}</p>
+                  <p className="avertissement">
+                    {t('salle.distanceCritique', {
+                      distance: analyse.distanceCritique.toFixed(1)
+                    })}
+                  </p>
+                  <p className="discret">{t('salle.distanceCritiqueExplication')}</p>
+                  {partHorsCritique !== null && (
+                    <>
+                      <p className="avertissement">
+                        {t('salle.partHorsCritique', {
+                          part: (partHorsCritique * 100).toFixed(0)
+                        })}
+                      </p>
+                      <p className="discret">{t('salle.partHorsCritiqueExplication')}</p>
+                    </>
+                  )}
+                  <p className="discret">{t('salle.modeleStatistique')}</p>
+                  <p className="discret">{t('materiau.valeursIndicatives')}</p>
+                </div>
+              )}
             </>
           )}
 

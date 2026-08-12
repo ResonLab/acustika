@@ -279,6 +279,109 @@ const TEXTES = {
     en: 'The shape is placed at the centre of the plan. Its vertices stay movable afterwards.'
   },
 
+  // --- La salle : absorption et réverbération ---
+  'salle.titre': { fr: 'La salle', en: 'The room' },
+  'salle.active': { fr: 'Tenir compte de la salle', en: 'Account for the room' },
+  'salle.inactive': {
+    fr: 'Le calcul ne porte que sur le champ direct : la carte est la même dans une église et dans un studio traité. Décrivez la salle pour y ajouter la réverbération.',
+    en: 'The calculation covers the direct field only: the map is the same in a church and in a treated studio. Describe the room to add reverberation.'
+  },
+  'salle.hauteur': { fr: 'Hauteur sous plafond (m)', en: 'Ceiling height (m)' },
+  'salle.sol': { fr: 'Sol', en: 'Floor' },
+  'salle.plafond': { fr: 'Plafond', en: 'Ceiling' },
+  'salle.murs': { fr: 'Murs', en: 'Walls' },
+  'salle.spectateurs': { fr: 'Spectateurs assis', en: 'Seated audience' },
+  'salle.spectateursExplication': {
+    fr: 'Le public absorbe : une salle pleine peut avoir deux fois l’absorption de la même salle vide. C’est la première cause d’écart entre une balance faite à vide et le résultat en représentation.',
+    en: 'The audience absorbs: a full room can have twice the absorption of the same room empty. That is the main reason a soundcheck in an empty room does not match the show.'
+  },
+  'salle.volume': { fr: 'Volume : {volume} m³', en: 'Volume: {volume} m³' },
+  'salle.aireAbsorption': { fr: 'Absorption : {aire} m² sabine', en: 'Absorption: {aire} m² sabine' },
+  'salle.rt60': { fr: 'RT60 : {sabine} s (Sabine) · {eyring} s (Eyring)', en: 'RT60: {sabine} s (Sabine) · {eyring} s (Eyring)' },
+  'salle.rt60Explication': {
+    fr: 'Eyring est plus juste dès que la salle absorbe beaucoup ; Sabine surestime alors. Les deux sont affichés parce qu’un écart important entre eux signale une salle très absorbante, où le modèle statistique lui-même devient discutable.',
+    en: 'Eyring is more accurate once the room absorbs a lot; Sabine then overestimates. Both are shown because a wide gap between them flags a very absorbent room, where the statistical model itself becomes questionable.'
+  },
+  'salle.distanceCritique': { fr: 'Distance critique : {distance} m', en: 'Critical distance: {distance} m' },
+  'salle.distanceCritiqueExplication': {
+    fr: 'Au-delà, le champ réverbéré domine le direct : monter le niveau n’améliore plus l’intelligibilité, il faut rapprocher une source. C’est la grandeur qui décide d’un renfort.',
+    en: 'Beyond it the reverberant field dominates the direct one: raising the level no longer improves intelligibility, you need a closer source. This is the figure that decides on a fill.'
+  },
+  'salle.partHorsCritique': {
+    fr: '{part} % du public est au-delà de la distance critique.',
+    en: '{part}% of the audience is beyond the critical distance.'
+  },
+  'salle.partHorsCritiqueExplication': {
+    fr: 'Pour ces places, la salle s’entend plus que la source. C’est la mesure qui compte ici — pas l’écart de niveau : le champ réverbéré étant uniforme, il aplatit l’écart et une salle très réverbérante affiche une couverture qui paraît parfaite.',
+    en: 'For those seats the room is heard more than the source. This is the figure that matters here — not the level spread: the reverberant field is uniform, so it flattens the spread and a very reverberant room shows coverage that looks perfect.'
+  },
+  'salle.ecartTrompeur': {
+    fr: 'La salle est prise en compte : l’écart ci-dessus est aplati par le champ réverbéré et ne mesure plus la qualité du placement. Le conseil, lui, continue de raisonner sur le champ direct — c’est le seul que le placement contrôle.',
+    en: 'The room is accounted for: the spread above is flattened by the reverberant field and no longer measures placement quality. The advice still reasons on the direct field — the only one placement controls.'
+  },
+  'salle.modeleStatistique': {
+    fr: 'Modèle statistique en champ diffus (Sabine, Eyring). Il suppose l’énergie réverbérée uniformément répartie — faux près des parois et dans un volume long et étroit. Il ne voit ni écho franc, ni mode propre : ce n’est pas du lancer de rayons.',
+    en: 'Statistical diffuse-field model (Sabine, Eyring). It assumes reverberant energy is evenly spread — untrue near surfaces and in long narrow volumes. It sees neither distinct echoes nor room modes: this is not ray tracing.'
+  },
+
+  // --- Matériaux ---
+  // Valeurs de tables publiées, pas des mesures : un même matériau varie
+  // facilement de 30 % d'une source à l'autre selon la pose et le support.
+  'materiau.betonBrut': { fr: 'Béton brut', en: 'Bare concrete' },
+  'materiau.platre': { fr: 'Plâtre sur maçonnerie', en: 'Plaster on masonry' },
+  'materiau.cloisonPlatre': { fr: 'Cloison plaque de plâtre', en: 'Plasterboard partition' },
+  'materiau.vitrage': { fr: 'Vitrage', en: 'Glazing' },
+  'materiau.parquet': { fr: 'Parquet bois', en: 'Wooden floor' },
+  'materiau.moquette': { fr: 'Moquette', en: 'Carpet' },
+  'materiau.rideauLourd': { fr: 'Rideau lourd plissé', en: 'Heavy pleated curtain' },
+  'materiau.dallesMinerales': { fr: 'Dalles minérales', en: 'Mineral ceiling tiles' },
+  'materiau.laine50': { fr: 'Absorbant 50 mm', en: 'Absorber, 50 mm' },
+  'materiau.laine100': { fr: 'Absorbant 100 mm', en: 'Absorber, 100 mm' },
+  'materiau.siegeVide': { fr: 'Siège rembourré vide', en: 'Empty padded seat' },
+  'materiau.publicAssis': { fr: 'Spectateur assis', en: 'Seated listener' },
+  'materiau.valeursIndicatives': {
+    fr: 'Valeurs de tables publiées, pas des mesures. Un même matériau varie de 30 % d’une source à l’autre selon la pose et le support.',
+    en: 'Published table values, not measurements. The same material varies by 30% between sources depending on mounting and backing.'
+  },
+
+  // Refus de `commun/salle.js`.
+  'erreur.salle.materiauInconnu': {
+    fr: 'Matériau inconnu : {id}.',
+    en: 'Unknown material: {id}.'
+  },
+  'erreur.salle.volumePositif': {
+    fr: 'Le volume doit être supérieur à zéro.',
+    en: 'The volume must be greater than zero.'
+  },
+  'erreur.salle.surfacePositive': {
+    fr: 'La surface des parois doit être supérieure à zéro.',
+    en: 'The surface of the walls must be greater than zero.'
+  },
+  'erreur.salle.airePositive': {
+    fr: 'L’aire au sol doit être supérieure à zéro.',
+    en: 'The floor area must be greater than zero.'
+  },
+  'erreur.salle.hauteurPositive': {
+    fr: 'La hauteur sous plafond doit être supérieure à zéro.',
+    en: 'The ceiling height must be greater than zero.'
+  },
+  'erreur.salle.perimetrePositif': {
+    fr: 'Le périmètre doit être supérieur à zéro.',
+    en: 'The perimeter must be greater than zero.'
+  },
+  'erreur.salle.quantiteNegative': {
+    fr: 'Une surface ou un nombre ne peut pas être négatif.',
+    en: 'An area or a count cannot be negative.'
+  },
+  'erreur.salle.ouvertureHorsLimites': {
+    fr: 'L’ouverture doit être comprise entre 0 et 360°.',
+    en: 'The coverage angle must be between 0 and 360°.'
+  },
+  'erreur.salle.directivitePositive': {
+    fr: 'Le facteur de directivité doit être supérieur à zéro.',
+    en: 'The directivity factor must be greater than zero.'
+  },
+
   // --- Conditions d'utilisation ---
   'conditions.titre': { fr: "Conditions d'utilisation", en: 'Terms of use' },
   'conditions.version': { fr: 'Version {version}', en: 'Version {version}' },
