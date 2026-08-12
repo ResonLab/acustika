@@ -12,7 +12,7 @@ antérieure à tout cela** : il faut une 0.2.0.
 
 ```bash
 cd Acustika && npm install && npm run dev
-cd Acustika && npm run verifier   # typecheck + 5 suites
+cd Acustika && npm run verifier   # typecheck + 6 suites
 ```
 
 Ce que l'application sait faire aujourd'hui :
@@ -32,7 +32,8 @@ Ce que l'application sait faire aujourd'hui :
 | **Retards d'alignement** | les rappels attendent la façade, marge de localisation comprise |
 | **Conseil de placement** | 315 placements essayés, et **l'explication de ce que chaque réglage apporte** |
 | **Échelle et curseur** | légende fidèle à la carte, niveau lu sous la souris |
-| **Français et anglais** | 95 clés, sélecteur dans la barre |
+| **Français et anglais** | 101 clés, sélecteur dans la barre |
+| **Conditions d'utilisation** | écran d'acceptation bloquant, pages publiques déduites du texte source |
 
 Le projet est un **fichier**, pas une ligne de base : une simulation se
 transmet, s'archive avec un dossier de chantier, se compare. En JSON lisible —
@@ -205,16 +206,24 @@ publique — le domaine est bloqué depuis l'outil de navigation. Ce qui est
 vérifié : les pages répondent en 200 et le module servi est identique octet pour
 octet à `commun/acoustique.js`.*
 
-### 2. Français et anglais — le site est fait, **l'application non**
+### 2. Français et anglais — **fait, site et application**
 
-Le site est bilingue (point 1). **L'application n'a rien** : pas d'`i18n.ts`, pas
-de sélecteur de langue, tout le texte des écrans en français en dur.
+Le site est bilingue (point 1), et l'application aussi : `src/partage/i18n.ts`,
+101 clés, sélecteur de langue dans la barre. La langue est **propre au poste**
+(localStorage) — un projet transmis à un confrère ne lui impose pas la langue
+de celui qui l'a créé.
 
-Ohmnia a l'infrastructure dans
-`APP/src/shared/i18n.ts` : un objet `TEXTES`, une clé préfixée par écran, et
-`npm run typecheck` rejette les clés inconnues. **Reprendre ce mécanisme, pas en
-inventer un autre.** Les messages d'erreur du main process devront aussi y
-passer, ou être renvoyés sous forme de clé.
+**Le mécanisme est celui d'Ohmnia et de Scenika**, repris tel quel : un objet
+`TEXTES`, une clé préfixée par écran, et `npm run typecheck` qui rejette une clé
+inconnue. Trois mécanismes différents dans la même maison, ce seraient trois
+façons d'oublier une chaîne.
+
+Les refus du processus principal ne sont pas des phrases mais **des clés** — il
+ne sait pas quelle langue la fenêtre affiche. Quand le message cite une valeur,
+la clé et la valeur voyagent **en JSON** (`traduireErreur`).
+
+`tests/traductions.mjs` refuse une clé sans anglais **ni** français, une clé
+déclarée jamais employée, et du texte français accentué en dur dans un écran.
 
 ### 3. Empaquetage Windows et Linux
 
@@ -279,6 +288,37 @@ tableau d'angles et d'atténuations. Le module fait le pont **par
 interpolation** : arrondir à la mesure la plus proche ferait varier l'ouverture
 par bonds de 20°. Les deux dispositions — angles en colonnes ou en lignes — sont
 reconnues toutes seules.
+
+**✔ Les conditions d'utilisation.** `src/partage/conditions.ts` porte le texte
+**en français et en anglais**, et **nulle part ailleurs** :
+`scripts/publier-conditions.mjs` en déduit `docs/conditions.html` et
+`docs/en/terms.html`. Recopié à la main, il divergerait — et deux versions d'un
+même engagement qui divergent, c'est pire que pas d'engagement.
+
+**Le risque couvert n'est pas électrique, comme dans Scenika, mais celui du
+conseil.** Le point 2 est la raison d'être du texte : Acustika calcule un champ
+direct — ni réflexions, ni réverbération, ni déphasage — et le conseil de
+placement est une proposition fondée sur un modèle simplifié, jamais une
+certitude. Une carte de couleurs est très convaincante même quand elle est
+fausse, et un placement recommandé avec une explication articulée l'est encore
+plus.
+
+**L'écran bloque l'application**, la case ne s'active qu'après défilement
+complet, et l'acceptation est liée à `VERSION_CONDITIONS` : incrémenter la
+version fait relire. L'accord vit dans le **navigateur du poste**.
+
+`tests/coherence-conditions.mjs` compare les deux pages au texte source,
+vérifie la version, et refuse que les mises en garde disparaissent. **Éprouvé
+en le cassant onze fois** — dont les trois sabotages qui comptent vraiment :
+diluer une mise en garde dans la source *et* régénérer les pages, de sorte que
+la comparaison source ↔ pages reste satisfaite. Seul le contrôle des mises en
+garde peut voir ce cas-là, et il le voit. Les tournures surveillées **évitent
+toute apostrophe** : c'est exactement ce qui avait rendu le contrôle de Scenika
+incapable d'échouer.
+
+`.github/workflows/site.yml` refuse de publier si cette suite échoue.
+
+*Réserve : ce texte est clair et honnête, il n'est pas validé par un juriste.*
 
 ### Le CLF binaire — la seule chose qui reste
 

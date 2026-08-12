@@ -1,8 +1,27 @@
 import { useCallback, useEffect, useState } from 'react'
 import Plan from './pages/Plan'
 import Bibliotheque from './pages/Bibliotheque'
+import ConditionsUtilisation from './components/ConditionsUtilisation'
 import type { ModeleEnceinte, Projet } from '../../partage/types'
 import { definirLangue, LANGUES, t, traduireErreur, type Langue } from '../../partage/i18n'
+import { VERSION_CONDITIONS } from '../../partage/conditions'
+
+/**
+ * La version des conditions acceptées par ce poste.
+ *
+ * Incrémenter `VERSION_CONDITIONS` fait donc réapparaître l'écran : on ne
+ * modifie pas des conditions dans le dos de quelqu'un qui les a acceptées.
+ */
+const CLE_CONDITIONS = 'acustika-conditions-acceptees'
+
+function conditionsDejaAcceptees(): boolean {
+  try {
+    return localStorage.getItem(CLE_CONDITIONS) === VERSION_CONDITIONS
+  } catch {
+    // Navigation privée ou stockage refusé : on redemande l'acceptation.
+    return false
+  }
+}
 
 /**
  * La langue est propre au poste : elle vit dans le navigateur, pas dans le
@@ -35,6 +54,7 @@ export default function App(): React.JSX.Element {
   const [enceintes, setEnceintes] = useState<ModeleEnceinte[]>([])
   const [message, setMessage] = useState('')
   const [langueActive, setLangueActive] = useState<Langue>(langueInitiale)
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(conditionsDejaAcceptees)
 
   // Avant le premier rendu des enfants : sans cela, ils s'afficheraient une
   // fois dans la langue précédente.
@@ -99,6 +119,23 @@ export default function App(): React.JSX.Element {
     setProjet(await window.api.projet.nouveau())
     setChemin(null)
     setModifie(false)
+  }
+
+  // L'écran des conditions passe avant tout le reste : des conditions qu'on
+  // peut contourner d'un clic ne sont pas des conditions.
+  if (!conditionsAcceptees) {
+    return (
+      <ConditionsUtilisation
+        onAccepter={() => {
+          try {
+            localStorage.setItem(CLE_CONDITIONS, VERSION_CONDITIONS)
+          } catch {
+            // Le choix ne survivra pas à la fermeture, mais l'écran s'ouvre.
+          }
+          setConditionsAcceptees(true)
+        }}
+      />
+    )
   }
 
   if (!projet) return <div className="app" />

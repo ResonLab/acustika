@@ -14,6 +14,7 @@ on:
       - 'docs/**'
       - 'commun/acoustique.js'
       - 'scripts/preparer-site.mjs'
+      - 'src/partage/conditions.ts'
       - '.github/workflows/site.yml'
   workflow_dispatch:
 
@@ -44,6 +45,11 @@ jobs:
       # ou si les deux langues ont divergé.
       - name: Verifier le site
         run: node tests/coherence-site.mjs
+
+      # Une page de conditions perimee engagerait l'utilisateur sur un texte
+      # different de celui qu'il a accepte dans l'application.
+      - name: Verifier les conditions
+        run: node tests/coherence-conditions.mjs
 
       - name: Preparer le site
         run: node scripts/preparer-site.mjs

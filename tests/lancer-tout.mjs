@@ -9,7 +9,8 @@ const SUITES = [
   ['Application', 'application.mjs'],
   ['Données polaires', 'polaire.mjs'],
   ['Traductions', 'traductions.mjs'],
-  ['Cohérence du site', 'coherence-site.mjs']
+  ['Cohérence du site', 'coherence-site.mjs'],
+  ['Cohérence des conditions', 'coherence-conditions.mjs']
 ]
 
 let echecs = 0

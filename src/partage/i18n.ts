@@ -235,7 +235,21 @@ const TEXTES = {
   },
 
   // --- Paramètres ---
-  'param.langue': { fr: 'Langue', en: 'Language' }
+  'param.langue': { fr: 'Langue', en: 'Language' },
+
+  // --- Conditions d'utilisation ---
+  'conditions.titre': { fr: "Conditions d'utilisation", en: 'Terms of use' },
+  'conditions.version': { fr: 'Version {version}', en: 'Version {version}' },
+  'conditions.defilerJusquauBout': {
+    fr: 'Faites défiler le texte jusqu’en bas pour continuer.',
+    en: 'Scroll to the bottom of the text to continue.'
+  },
+  'conditions.jaiLu': {
+    fr: 'J’ai lu et j’accepte ces conditions.',
+    en: 'I have read and accept these terms.'
+  },
+  'conditions.accepter': { fr: 'Accepter et continuer', en: 'Accept and continue' },
+  'conditions.lireSurLeSite': { fr: 'Lire sur le site', en: 'Read on the website' }
 } satisfies Record<string, Traduction>
 
 export type CleTraduction = keyof typeof TEXTES

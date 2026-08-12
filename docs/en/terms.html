@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Acustika — loudspeaker coverage in a room, and where to place them</title>
-<meta name="description" content="Acustika computes and displays loudspeaker coverage in a room, and proposes where to place them: height, angle, spacing, delays. Freely drawn zones, raked seating, open formats. Your projects stay on your computer." />
+<title>Acustika — terms of use</title>
+<meta name="description" content="The terms of use of Acustika: what the calculation and the placement advice do, and what they do not do." />
 <link rel="icon" href="../acustika.svg" type="image/svg+xml" />
 <meta property="og:title" content="Acustika" />
-<meta property="og:description" content="Loudspeaker coverage in a room, computed and displayed — and where to put the boxes. Your projects stay with you." />
+<meta property="og:description" content="The terms of use of Acustika: what the calculation and the placement advice do, and what they do not do." />
 <meta property="og:type" content="website" />
 
 <script>
@@ -275,11 +275,11 @@
       <span class="nom">Acustika</span>
     </a>
     <nav class="nav">
-      <a href="#ce-quelle-fait">What it does</a>
-      <a href="#honnetete" class="hide-sm">What it does not do</a>
-      <a href="#principes" class="hide-sm">Our principles</a>
+      <a href="index.html#ce-quelle-fait">What it does</a>
+      <a href="index.html#honnetete" class="hide-sm">What it does not do</a>
+      <a href="index.html#principes" class="hide-sm">Our principles</a>
       <a href="https://github.com/ResonLab/acustika">GitHub</a>
-      <a href="../" class="langue" hreflang="fr">FR</a>
+      <a href="../conditions.html" class="langue" hreflang="fr">FR</a>
       <button class="theme" id="theme" type="button" aria-label="Switch theme">
         <svg class="i-sombre" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
@@ -295,144 +295,42 @@
 
 <main>
   <section class="hero wrap">
-    <p class="etat-ligne">RELEASED — 0.1.0 · WINDOWS AND LINUX</p>
-    <h1>The map, and <span class="grad-text">the answer</span>.</h1>
-    <p class="chapo">
-      Acustika computes the loudspeaker coverage of your room and shows it. And more to the point,
-      it proposes <em>where</em> to put the boxes — not just a map you have to know how to read.
-    </p>
-    <div class="actions">
-      <a class="btn" href="https://github.com/ResonLab/acustika/releases/latest">Download — Windows and Linux</a>
-      <a class="btn btn-ghost" href="carte-couverture.html">See a coverage map</a>
-      <a class="btn btn-ghost" href="#honnetete">What it does not do</a>
-    </div>
+    <p class="etat-ligne">VERSION 1.0</p>
+    <h1>Terms <span class="grad-text">of use</span>.</h1>
+    <p class="chapo">In short: your data stays with you, and both the map and the placement advice are preparation aids — never a substitute for an acoustic study. Validation in the room is the work of a qualified person.</p>
+    <p class="chapo">This text adds to the <a href="https://resonlab.github.io/en/terms.html">general ResonLab terms</a>.</p>
   </section>
 
-  <section id="ce-quelle-fait" class="wrap">
-    <h2 class="titre reveal">Describe the room, read the coverage</h2>
-    <p class="intro reveal" style="--d:.06s">
-      A room is not a rectangle. You draw its zones with the mouse, give each one its rake, place
-      the boxes and aim them: the map recomputes on every move.
-    </p>
+  <section class="wrap">
+    <h2 class="titre reveal">1. What Acustika is</h2>
+    <p class="intro reveal">Acustika simulates the sound coverage of a room: you describe a room and loudspeakers, the application calculates and displays sound pressure, a section view, alignment delays, and suggests placements.</p>
+    <p class="intro reveal">Your data stays on your machine. A project is a file you open, save and share yourself; nothing leaves it.</p>
 
-    <div class="cards deux">
-      <div class="card reveal">
-        <span class="num">WRITTEN</span>
-        <h3>Freely drawn zones</h3>
-        <p>Point by point, any shape, several per project. An L-shape properly excludes its notch,
-        where a simple bounding rectangle would have taken it in.</p>
-        <p><strong>With their rake</strong>, as a percentage: 8 m of seating at 15% rises 1.20 m, and
-        the ears rise with the floor.</p>
-      </div>
-      <div class="card reveal" style="--d:.06s">
-        <span class="num">WRITTEN</span>
-        <h3>A coverage map</h3>
-        <p>Recomputed on every move, on a 24 dB scale, with the mean and the spread of each zone.</p>
-        <p><strong>What counts is the spread across the whole room</strong>, not the average of the
-        spreads. A room with an even stalls and a balcony 12 dB down is not well covered, even if
-        each zone taken alone is.</p>
-      </div>
-      <div class="card reveal" style="--d:.12s">
-        <span class="num">WRITTEN</span>
-        <h3>A loudspeaker library</h3>
-        <p>You pick a model before placing it, instead of retyping everything on every project.
-        Coverage angle is set <strong>band by band</strong>.</p>
-        <p>A loudspeaker is very directional at high frequencies and near-omnidirectional at low ones:
-        <strong>a single-frequency calculation is misleading</strong> and would give bad advice.</p>
-      </div>
-      <div class="card reveal bientot" style="--d:.18s">
-        <span class="num">COMING</span>
-        <h3>Placement advice</h3>
-        <p>The application tries several placements and keeps the one whose coverage is the most even
-        — height, angle, spacing, delays.</p>
-        <p>Then it explains <strong>why</strong>. Without the explanation nobody will trust the result,
-        and the tool will be of no use.</p>
-      </div>
-    </div>
-  </section>
+    <h2 class="titre reveal">2. Neither the calculation nor the advice replace an acoustic study</h2>
+    <p class="intro reveal">This is the most important point in this document. Acustika calculates a direct field: it ignores reflections, reverberation and phase interaction between sources. It adds levels in energy, assuming uncorrelated sources — two coherent sources can in reality add up to +6 dB or cancel out.</p>
+    <p class="intro reveal">A colour coverage map is very convincing, even when it is wrong. The placement advice tries several positions and keeps the one whose calculated coverage is most even according to an explicit criterion — it is not a certainty, it is a proposal based on a simplified model.</p>
+    <p class="intro reveal">The real room never exactly matches the model: materials, audience, furniture, non-rectangular shapes, reflections off the walls. The advice takes none of these into account.</p>
+    <p class="intro reveal">A poorly evaluated placement can result in uneven coverage, a system misaligned in time, or a false sense of the outcome. Sizing and validating an installation in a room is the work of a qualified person, and responsibility for your installation remains entirely yours.</p>
 
-  <section id="honnetete" class="bande">
-    <div class="wrap">
-      <h2 class="titre reveal">What it does not do</h2>
-      <p class="intro reveal" style="--d:.06s">
-        <strong>A colour map is very convincing, even when it is wrong.</strong> That is why this
-        section exists, and why the application says the same thing on screen.
-      </p>
+    <h2 class="titre reveal">3. Alignment delays are a starting point</h2>
+    <p class="intro reveal">The calculated delays assume the speed of sound in air at the entered temperature, and a fixed localisation margin. They do not account for wind, humidity, or temperature variation across the volume of the room.</p>
+    <p class="intro reveal">Check the alignment by ear and, where possible, with an analyser before the show. A misaligned system is judged on site, never in a table of numbers.</p>
 
-      <div class="cards">
-        <div class="card reveal">
-          <span class="num">DIRECT FIELD</span>
-          <h3>No reflections, no reverberation</h3>
-          <p>Acustika computes a direct field. Walls, audience and furniture are not modelled. A real
-          room never looks like the model.</p>
-        </div>
-        <div class="card reveal" style="--d:.06s">
-          <span class="num">SOURCES</span>
-          <h3>No phase between boxes</h3>
-          <p>The summation assumes uncorrelated sources: two equal sources give +3 dB, not +6. Two
-          coherent sources can in reality reach +6 dB or cancel.</p>
-        </div>
-        <div class="card reveal" style="--d:.12s">
-          <span class="num">NOT &ldquo;LIKE EASE&rdquo;</span>
-          <h3>No ray tracing, no STI</h3>
-          <p>EASE and its peers are decades of work by teams of acousticians. Promising the same would
-          mean shipping wrong maps with the confidence of right ones.</p>
-        </div>
-      </div>
+    <h2 class="titre reveal">4. Your data and your backups</h2>
+    <p class="intro reveal">Acustika performs no automatic backup. A project lives in an `.acustika` file on your machine, which only you manage.</p>
+    <p class="intro reveal">A disk failure, a theft or a slip of the hand can destroy it. Copy it elsewhere regularly, and check now and then that the copy opens.</p>
 
-      <p class="intro reveal" style="--d:.18s; margin-top:34px">
-        What is reachable is already useful: coverage, sound pressure, delay times for fills, and
-        placement advice. <strong>The advice will stay a proposal, never a certainty.</strong>
-      </p>
-    </div>
-  </section>
+    <h2 class="titre reveal">5. No warranty</h2>
+    <p class="intro reveal">Acustika is provided as is, with no warranty of uninterrupted operation or freedom from error. Software can contain defects, including in calculations or in the placement advice.</p>
+    <p class="intro reveal">Do not rely blindly on a displayed map, on a proposed placement, or on a calculated delay.</p>
 
-  <section id="formats" class="wrap">
-    <h2 class="titre reveal">Open formats, and a project that is yours</h2>
-    <p class="intro reveal" style="--d:.06s">
-      A project is a <strong>file</strong>, not a row in a database: a simulation gets sent on,
-      archived with the job folder, compared.
-    </p>
+    <h2 class="titre reveal">6. Limitation of liability</h2>
+    <p class="intro reveal">To the extent permitted by law, the publisher is not liable for damages arising from the use of Acustika: loss of data, insufficient sound coverage, a misaligned system, or damage to property or persons.</p>
+    <p class="intro reveal">This limitation does not apply in cases of gross negligence or intent, nor where the law imposes liability that cannot be excluded. Depending on your country, some of these exclusions may have no effect on you.</p>
 
-    <div class="cards">
-      <div class="card reveal">
-        <span class="num">.ACUSTIKA</span>
-        <h3>Readable JSON</h3>
-        <p>In ten years it will still open in a text editor. That is exactly the complaint made about
-        closed formats.</p>
-      </div>
-      <div class="card reveal" style="--d:.06s">
-        <span class="num">NO GLL</span>
-        <h3>CLF, SOFA, or CSV</h3>
-        <p>GLL is a closed format with no public specification. Acustika targets <strong>CLF</strong>,
-        created as an open alternative, and <strong>SOFA</strong> (AES69).</p>
-      </div>
-      <div class="card reveal" style="--d:.12s">
-        <span class="num">THE FALLBACK</span>
-        <h3>Typing it in always works</h3>
-        <p>Many manufacturers publish their polar data as CSV. A few angles and a few bands are enough
-        for a useful map. CSV import already exists.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="principes" class="bande">
-    <div class="wrap">
-      <h2 class="titre reveal">What we stand for</h2>
-      <p class="intro reveal" style="--d:.06s">
-        Acustika follows the <a href="https://resonlab.github.io">ResonLab</a> rules, the same ones
-        as Ohmnia and Scenika.
-      </p>
-
-      <div class="cards">
-        <div class="card reveal"><span class="num">01</span><h3>No connection</h3><p>No account, no subscription, no usage tracking. Your projects never leave your machine.</p></div>
-        <div class="card reveal" style="--d:.06s"><span class="num">02</span><h3>No server, on purpose</h3><p>Acustika works on project files, not on shared company data. Two people do not edit one simulation at the same time.</p></div>
-        <div class="card reveal" style="--d:.12s"><span class="num">03</span><h3>Messages that explain</h3><p>Precise, never a raw technical error. When the software refuses something, it says why.</p></div>
-        <div class="card reveal" style="--d:.18s"><span class="num">04</span><h3>Nothing you cannot reopen</h3><p>Readable formats, simple code, no closed format. That is a commitment, not a preference.</p></div>
-        <div class="card reveal" style="--d:.24s"><span class="num">05</span><h3>What is not guaranteed is said</h3><p>Acustika does not replace an acoustician. What is indicative is announced as such, on screen and not only in the terms.</p></div>
-        <div class="card reveal" style="--d:.30s"><span class="num">06</span><h3>Checked, not claimed</h3><p>The physics is tested against values known by hand: &minus;6 dB per doubling of distance, +3 dB for two equal sources, 2.9 ms per metre.</p></div>
-      </div>
-    </div>
+    <h2 class="titre reveal">7. Acceptance</h2>
+    <p class="intro reveal">By using Acustika you acknowledge that you have read these terms and accepted that the acoustic validation of your installation is your responsibility alone.</p>
+    <p class="intro reveal">If you do not accept these terms, do not use the application.</p>
   </section>
 </main>
 

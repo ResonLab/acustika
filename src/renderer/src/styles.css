@@ -294,6 +294,58 @@ canvas {
   background: rgba(255, 201, 97, 0.09);
 }
 
+/* ── L'écran d'acceptation des conditions ─────────────────────────────────
+   Il bloque l'application au premier lancement. Le texte défile dans sa
+   propre boîte : c'est ce défilement qui débloque la case, donc il doit se
+   voir comme une zone à parcourir, et non comme la page entière. */
+.conditions-ecran {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.conditions-carte {
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  padding: 1.5rem;
+  max-width: 760px;
+  width: 100%;
+}
+
+.conditions-carte h1 {
+  margin: 0 0 0.2rem;
+}
+
+.conditions-texte {
+  max-height: 46vh;
+  overflow-y: auto;
+  border: 1px solid var(--trait);
+  border-radius: 6px;
+  padding: 0.9rem 1.1rem;
+  margin: 1rem 0;
+  background: var(--fond);
+}
+
+.conditions-texte h2 {
+  font-size: 1rem;
+  margin: 1.2rem 0 0.4rem;
+  color: var(--clair);
+}
+
+.conditions-texte section:first-child h2 {
+  margin-top: 0;
+}
+
+.conditions-case {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.8rem 0;
+}
+
 /* ── L'échelle de la carte ────────────────────────────────────────────────
    Les mêmes couleurs que la carte, dans le même ordre. Une légende qui ne
    correspond pas à ce qu'elle légende est pire qu'une absence de légende. */
