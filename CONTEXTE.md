@@ -4,11 +4,16 @@
 > La vue d'ensemble des trois applications est dans [../LISEZ-MOI.md](../LISEZ-MOI.md).
 > Ce fichier-ci ne concerne qu'Acustika.
 
-**État au 10 août 2026 — complète, bilingue, publiée.** Un plan où l'on dessine
-ses zones, où l'on pose ses enceintes et où la couverture se recalcule ; une vue
-en coupe ; des retards d'alignement ; **et le conseil de placement, qui explique
-pourquoi**. Publiée en 0.1.0 pour Windows et Linux — mais **cette release est
-antérieure à tout cela** : il faut une 0.2.0.
+**État au 12 août 2026 — complète, bilingue, avec conditions d'utilisation.** Un
+plan où l'on dessine ses zones, où l'on pose ses enceintes et où la couverture se
+recalcule ; une vue en coupe ; des retards d'alignement ; **et le conseil de
+placement, qui explique pourquoi**.
+
+**La 0.2.0 est construite** pour Windows et Linux — `.exe`, AppImage et `.deb`,
+par GitHub Actions — et **attend en brouillon** sur la page des releases. Elle ne
+sera téléchargeable qu'une fois publiée à la main. La 0.1.0 encore en ligne est
+antérieure au conseil de placement, à la coupe, aux retards et à l'import
+polaire : **c'est elle que téléchargent les visiteurs aujourd'hui.**
 
 ```bash
 cd Acustika && npm install && npm run dev
@@ -306,6 +311,15 @@ plus.
 **L'écran bloque l'application**, la case ne s'active qu'après défilement
 complet, et l'acceptation est liée à `VERSION_CONDITIONS` : incrémenter la
 version fait relire. L'accord vit dans le **navigateur du poste**.
+
+**Un texte qui tient sans défiler compte comme lu** — et c'est un bug réel,
+trouvé en lançant l'application, pas en la relisant. Sans cette règle, l'écran
+devient un piège dont on ne sort plus : il n'y a rien à faire défiler, `onScroll`
+ne se déclenche jamais, la case reste grise pour toujours et **l'application ne
+démarre plus du tout**. Cela arrive sur un très grand écran, et cela arrivait
+systématiquement dès que la feuille de style ne s'appliquait pas. Le composant
+mesure donc la hauteur au montage. **Une porte dont la clé est à l'intérieur ne
+se relit pas, elle s'ouvre.**
 
 `tests/coherence-conditions.mjs` compare les deux pages au texte source,
 vérifie la version, et refuse que les mises en garde disparaissent. **Éprouvé

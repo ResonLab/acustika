@@ -50,6 +50,38 @@ if (!existsSync(cheminEn)) {
     if (a !== b) echec(`${nom} : ${a} en français, ${b} en anglais`)
   }
 
+  // Les badges d'état doivent dire la même chose dans les deux langues.
+  //
+  // **C'est un trou trouvé en le cherchant**, le 12 août 2026 : on a pu remettre
+  // « À VENIR » sur une carte française pendant que l'anglaise disait
+  // « WRITTEN », et cette suite affichait OK. Compter les cartes ne dit rien de
+  // ce qu'elles annoncent. Or c'est exactement par là que trois badges ont
+  // périmé : ils annonçaient comme à venir des modules téléchargeables.
+  //
+  // Les autres badges sont des libellés libres (« CHAMP DIRECT », « 01 ») et ne
+  // sont pas comparés — mais un libellé libre d'un côté face à un badge d'état
+  // de l'autre est signalé, sinon la correspondance se perdrait en silence.
+  const ETATS = { ÉCRIT: 'WRITTEN', 'À VENIR': 'COMING' }
+  const badges = (html) =>
+    [...html.matchAll(/<span class="num">([^<]*)<\/span>/g)].map((m) => m[1].trim())
+
+  const badgesFr = badges(fr)
+  const badgesEn = badges(en)
+  if (badgesFr.length !== badgesEn.length) {
+    echec(`badges : ${badgesFr.length} en français, ${badgesEn.length} en anglais`)
+  } else {
+    badgesFr.forEach((badgeFr, i) => {
+      const badgeEn = badgesEn[i]
+      const attenduEn = ETATS[badgeFr]
+      const enEstUnEtat = Object.values(ETATS).includes(badgeEn)
+      if (attenduEn && badgeEn !== attenduEn) {
+        echec(`badge ${i + 1} : « ${badgeFr} » en français, « ${badgeEn} » en anglais`)
+      } else if (!attenduEn && enEstUnEtat) {
+        echec(`badge ${i + 1} : « ${badgeFr} » en français face à l'état « ${badgeEn} » en anglais`)
+      }
+    })
+  }
+
   // Le CSS et le JavaScript doivent rester identiques : la version anglaise
   // est fabriquée par substitution de texte, elle n'a aucune raison d'avoir
   // sa propre mise en forme. Si les deux divergent, c'est qu'on a édité la
