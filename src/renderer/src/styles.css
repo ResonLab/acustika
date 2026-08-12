@@ -134,6 +134,27 @@ button.discret,
   outline: 2px solid var(--ambre);
 }
 
+/* La saisie des cotes d'une forme préfaite, sous la barre d'outils. */
+.barre-formes {
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+}
+
+.barre-formes .cote {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+/* Une cote tient en quatre chiffres : un champ large inviterait à en saisir
+   davantage, et une salle ne fait pas mille mètres. */
+.barre-formes .cote input {
+  width: 5.5rem;
+}
+
 .carte {
   background: var(--carte);
   border: 1px solid var(--trait);

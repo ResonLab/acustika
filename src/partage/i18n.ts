@@ -229,6 +229,25 @@ const TEXTES = {
     en: 'This file contains neither zones nor loudspeakers: it is not an Acustika project.'
   },
   'erreur.ligne': { fr: 'Ligne {ligne} : {detail}', en: 'Line {ligne}: {detail}' },
+  // Refus de `commun/formes.js`. Le module rend une clé, pas une phrase : il
+  // tourne aussi dans les tests et dans un navigateur, et ne sait pas quelle
+  // langue la fenêtre affiche.
+  'erreur.formes.dimensionsPositives': {
+    fr: 'Les dimensions doivent être supérieures à zéro.',
+    en: 'Dimensions must be greater than zero.'
+  },
+  'erreur.formes.rayonPositif': {
+    fr: 'Le rayon doit être supérieur à zéro.',
+    en: 'The radius must be greater than zero.'
+  },
+  'erreur.formes.troisSegments': {
+    fr: 'Un arc demande au moins trois segments.',
+    en: 'An arc needs at least three segments.'
+  },
+  'erreur.formes.ferAChevalTropCourt': {
+    fr: 'Un fer à cheval doit être plus profond que la moitié de sa largeur : sinon l’arc du fond se replierait sur les côtés droits.',
+    en: 'A horseshoe must be deeper than half its width: otherwise the back arc would fold onto the straight sides.'
+  },
   'erreur.projetIllisible': {
     fr: "Ce fichier est illisible : il n'est pas au format d'un projet Acustika.",
     en: 'This file cannot be read: it is not in the Acustika project format.'
@@ -236,6 +255,29 @@ const TEXTES = {
 
   // --- Paramètres ---
   'param.langue': { fr: 'Langue', en: 'Language' },
+
+  // --- Formes préfaites ---
+  // Dessinée à la souris, une salle rectangulaire n'en est pas une : les côtés
+  // ne sont pas parallèles et l'aire est fausse de quelques pour cent.
+  'forme.poser': { fr: 'Forme préfaite', en: 'Preset shape' },
+  'forme.rectangle': { fr: 'Rectangle', en: 'Rectangle' },
+  'forme.carre': { fr: 'Carré', en: 'Square' },
+  'forme.cercle': { fr: 'Cercle', en: 'Circle' },
+  'forme.demiCercle': { fr: 'Demi-cercle', en: 'Half-circle' },
+  'forme.eventail': { fr: 'Éventail', en: 'Fan' },
+  'forme.ferACheval': { fr: 'Fer à cheval', en: 'Horseshoe' },
+  'forme.largeur': { fr: 'Largeur (m)', en: 'Width (m)' },
+  'forme.profondeur': { fr: 'Profondeur (m)', en: 'Depth (m)' },
+  'forme.cote': { fr: 'Côté (m)', en: 'Side (m)' },
+  'forme.rayon': { fr: 'Rayon (m)', en: 'Radius (m)' },
+  'forme.largeurScene': { fr: 'Largeur côté scène (m)', en: 'Width at the stage (m)' },
+  'forme.largeurFond': { fr: 'Largeur au fond (m)', en: 'Width at the back (m)' },
+  'forme.ajouter': { fr: 'Poser la forme', en: 'Place the shape' },
+  'forme.aire': { fr: 'Aire : {aire} m²', en: 'Area: {aire} m²' },
+  'forme.explication': {
+    fr: 'La forme est posée au centre du plan. Ses sommets restent déplaçables ensuite.',
+    en: 'The shape is placed at the centre of the plan. Its vertices stay movable afterwards.'
+  },
 
   // --- Conditions d'utilisation ---
   'conditions.titre': { fr: "Conditions d'utilisation", en: 'Terms of use' },

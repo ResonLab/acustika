@@ -10,6 +10,7 @@ import {
   type Effet,
   type RetardCalcule
 } from '../../../../commun/acoustique.js'
+import { aire, FORMES } from '../../../../commun/formes.js'
 import { t, traduireErreur } from '../../../partage/i18n'
 import type {
   EnceintePlacee,
@@ -33,7 +34,7 @@ import type {
  * lorsqu'elle est fausse.
  */
 
-type Outil = 'main' | 'zone' | 'enceinte'
+type Outil = 'main' | 'zone' | 'forme' | 'enceinte'
 
 const COULEURS = [
   [26, 20, 48],
@@ -399,23 +400,80 @@ export default function Plan({
     })
   }
 
-  function terminerZone(): void {
-    if (contourEnCours.length < 3) {
-      setErreur(t('plan.zoneTroisPoints'))
-      return
-    }
-    const zone: ZoneEcoute = {
+  /** Une zone neuve, quelle que soit la façon dont son contour a été obtenu. */
+  function zoneNeuve(contour: Point2D[]): ZoneEcoute {
+    return {
       id: identifiant(),
       nom: t('plan.zoneNumerotee', { numero: projet.zones.length + 1 }),
-      contour: contourEnCours,
+      contour,
       hauteurOreilles: 1.2,
       altitude: 0,
       pentePourcent: 0,
       directionPenteDegres: 90
     }
-    modifierProjet({ ...projet, zones: [...projet.zones, zone] })
+  }
+
+  function terminerZone(): void {
+    if (contourEnCours.length < 3) {
+      setErreur(t('plan.zoneTroisPoints'))
+      return
+    }
+    modifierProjet({ ...projet, zones: [...projet.zones, zoneNeuve(contourEnCours)] })
     setContourEnCours([])
     setOutil('main')
+  }
+
+  /* ── Les formes préfaites ────────────────────────────────────────────── */
+
+  const [formeChoisie, setFormeChoisie] = useState(FORMES[0].id)
+  const [dimensions, setDimensions] = useState<Record<string, number>>(() =>
+    Object.fromEntries(FORMES[0].parametres.map((p) => [p.nom, p.defaut]))
+  )
+
+  const forme = FORMES.find((f) => f.id === formeChoisie) ?? FORMES[0]
+
+  /** Changer de forme réinitialise ses cotes : elles n'ont pas les mêmes noms. */
+  function changerDeForme(id: string): void {
+    const suivante = FORMES.find((f) => f.id === id)
+    if (!suivante) return
+    setFormeChoisie(id)
+    setDimensions(Object.fromEntries(suivante.parametres.map((p) => [p.nom, p.defaut])))
+    setErreur('')
+  }
+
+  /**
+   * L'aperçu de l'aire, recalculé à chaque frappe.
+   *
+   * Il rend visible une cote absurde avant de poser la forme — et surtout, il
+   * rend visible **le refus** : une dimension nulle ou un fer à cheval plus
+   * court que son rayon lèvent, et l'aperçu affiche alors le motif au lieu d'un
+   * nombre. Sans lui, l'utilisateur cliquerait « Poser » pour découvrir l'erreur.
+   */
+  const apercu = useMemo(() => {
+    try {
+      return { aire: aire(forme.construire({ x: 0, y: 0 }, dimensions)), refus: '' }
+    } catch (e) {
+      return { aire: 0, refus: traduireErreur((e as Error).message) }
+    }
+  }, [forme, dimensions])
+
+  /**
+   * Pose la forme au centre du plan.
+   *
+   * **Au centre, et pas là où l'on a cliqué** : une salle occupe tout le plan,
+   * et la recadrer ensuite est un geste, alors que retrouver une forme posée
+   * hors champ n'en est pas un.
+   */
+  function poserLaForme(): void {
+    setErreur('')
+    try {
+      const centre = { x: projet.largeur / 2, y: projet.profondeur / 2 }
+      const contour = forme.construire(centre, dimensions)
+      modifierProjet({ ...projet, zones: [...projet.zones, zoneNeuve(contour)] })
+      setOutil('main')
+    } catch (e) {
+      setErreur(traduireErreur((e as Error).message))
+    }
   }
 
   const [conseil, setConseil] = useState<Conseil | null>(null)
@@ -638,6 +696,16 @@ export default function Plan({
           {t('plan.dessinerZone')}
         </button>
         <button
+          className={outil === 'forme' ? 'actif' : ''}
+          onClick={() => {
+            setOutil('forme')
+            setContourEnCours([])
+            setErreur('')
+          }}
+        >
+          {t('forme.poser')}
+        </button>
+        <button
           className={outil === 'enceinte' ? 'actif' : ''}
           onClick={() => setOutil('enceinte')}
         >
@@ -674,6 +742,42 @@ export default function Plan({
           </>
         )}
       </div>
+
+      {outil === 'forme' && (
+        <div className="barre-outils barre-formes">
+          <select value={formeChoisie} onChange={(e) => changerDeForme(e.target.value)}>
+            {FORMES.map((f) => (
+              <option key={f.id} value={f.id}>
+                {t(f.cle as Parameters<typeof t>[0])}
+              </option>
+            ))}
+          </select>
+
+          {forme.parametres.map((parametre) => (
+            <label key={parametre.nom} className="cote">
+              {t(parametre.cle as Parameters<typeof t>[0])}
+              <input
+                type="number"
+                min="0.1"
+                step="0.5"
+                value={dimensions[parametre.nom] ?? parametre.defaut}
+                onChange={(e) =>
+                  setDimensions({ ...dimensions, [parametre.nom]: Number(e.target.value) })
+                }
+              />
+            </label>
+          ))}
+
+          <button onClick={poserLaForme} disabled={apercu.refus !== ''}>
+            {t('forme.ajouter')}
+          </button>
+
+          <span className={apercu.refus ? 'erreur' : 'discret'}>
+            {apercu.refus || t('forme.aire', { aire: apercu.aire.toFixed(1) })}
+          </span>
+          <span className="discret">{t('forme.explication')}</span>
+        </div>
+      )}
 
       {erreur && <p className="erreur">{erreur}</p>}
 

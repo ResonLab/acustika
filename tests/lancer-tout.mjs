@@ -6,6 +6,7 @@ const DOSSIER = dirname(fileURLToPath(import.meta.url))
 
 const SUITES = [
   ['Physique et couverture', 'acoustique.mjs'],
+  ['Formes préfaites', 'formes.mjs'],
   ['Application', 'application.mjs'],
   ['Données polaires', 'polaire.mjs'],
   ['Traductions', 'traductions.mjs'],
