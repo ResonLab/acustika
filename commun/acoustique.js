@@ -675,6 +675,59 @@ export function appliquerReglage(enceintes, reglage) {
 }
 
 /**
+ * Le domaine dans lequel une enceinte a le droit d'aller.
+ *
+ * **Défaut réel signalé par l'utilisateur** : le conseil sortait une enceinte
+ * du rectangle. La recherche fait varier l'écartement, et rien ne vérifiait
+ * que les positions obtenues restaient dans la salle. Une enceinte accrochée
+ * dans le vide au-delà du mur est un conseil inapplicable — et un conseil
+ * inapplicable est pire qu'aucun conseil, parce qu'il a l'air d'une réponse.
+ *
+ * Le domaine est l'enveloppe de **ce que l'utilisateur a dessiné** : ses zones
+ * et ses enceintes. On ne s'autorise donc jamais à sortir de ce qu'il a jugé
+ * possible, ce qui est exactement la règle déjà écrite pour `appliquerReglage`
+ * — on transforme ses positions, on n'en réinvente pas.
+ *
+ * **La marge est absolue, et c'est une correction.** Un premier jet la prenait
+ * égale à l'écartement courant : avec deux enceintes larges de huit mètres, le
+ * domaine s'ouvrait de huit mètres de chaque côté et la contrainte ne
+ * contraignait plus rien. Elle passait tous les tests en ne refusant jamais
+ * rien — le pire cas de figure. Deux mètres suffisent à laisser respirer un
+ * système déjà posé au bord sans autoriser le vide au-delà du mur.
+ *
+ * @param {Zone[]} zones
+ * @param {Enceinte[]} enceintes
+ * @param {number} [marge] En mètres.
+ */
+function domaineAutorise(zones, enceintes, marge = MARGE_DOMAINE) {
+  const points = [
+    ...zones.flatMap((zone) => zone.contour),
+    ...enceintes.map((enceinte) => enceinte.position)
+  ]
+  const boite = encadrement(points)
+  return {
+    xMin: boite.xMin - marge,
+    xMax: boite.xMax + marge,
+    yMin: boite.yMin - marge,
+    yMax: boite.yMax + marge
+  }
+}
+
+/** Ce qu'on s'autorise au-delà de ce que l'utilisateur a dessine, en metres. */
+const MARGE_DOMAINE = 2
+
+/** Toutes les enceintes tiennent-elles dans le domaine ? */
+function dansLeDomaine(enceintes, domaine) {
+  return enceintes.every(
+    (e) =>
+      e.position.x >= domaine.xMin &&
+      e.position.x <= domaine.xMax &&
+      e.position.y >= domaine.yMin &&
+      e.position.y <= domaine.yMax
+  )
+}
+
+/**
  * Cherche le placement dont la couverture est la plus régulière.
  *
  * **Le critère est unique et explicite** : l'écart de niveau sur toute la
@@ -708,6 +761,9 @@ export function conseillerPlacement(zones, enceintes, bande, pas = 1, niveauReve
     couvertureSalle(zones, appliquerReglage(enceintes, reglage), bande, pas, niveauReverbereDb)
       .ecart
 
+  // Le domaine est calcule une fois : il ne depend pas du candidat teste.
+  const domaine = domaineAutorise(zones, enceintes)
+
   const ecartActuel = ecartDe(actuel)
 
   let meilleur = actuel
@@ -722,6 +778,10 @@ export function conseillerPlacement(zones, enceintes, bande, pas = 1, niveauReve
           ecartement: actuel.ecartement * facteurEcartement,
           distanceVisee: portee * facteurVisee
         }
+        // Un candidat qui sort les enceintes de la salle n'est pas evalue :
+        // il aurait pu gagner sur l'ecart et rester inapplicable.
+        if (!dansLeDomaine(appliquerReglage(enceintes, candidat), domaine)) continue
+
         essais += 1
         const ecart = ecartDe(candidat)
         if (ecart < ecartPropose - 0.01) {

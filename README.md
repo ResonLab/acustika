@@ -57,6 +57,19 @@ npm run verifier   # typecheck + 2 suites
 npm run dev
 ```
 
+## Les applications de la maison
+
+Cinq programmes, cinq publics, une seule façon de travailler : vos données
+restent sur votre machine.
+
+- [Ohmnia](https://github.com/ResonLab/ohmnia) — gestion pour indépendant : facturation, devis, suivi du temps, inventaire
+- [Scenika](https://github.com/ResonLab/scenika) — parc son et lumière, locations, puissance, adressage DMX
+- **Acustika** — simulation acoustique : couverture d'enceintes dans une salle *(vous y êtes)*
+- [Lumika](https://github.com/ResonLab/lumika) — plan de feu de théâtre : perches, patch, feuille imprimable
+- [Nexika](https://github.com/ResonLab/nexika) — le serveur multi-postes, commun à Ohmnia et Scenika
+
+Tout est présenté sur [resonlab.github.io](https://resonlab.github.io).
+
 ## Licence
 
 MIT.

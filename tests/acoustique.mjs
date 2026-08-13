@@ -633,5 +633,55 @@ verifier(
 refuseAvec('une coupe sans zone est refusée', () => profilCoupe([], facadeCoupe, 6, 1000), 'zone')
 refuseAvec('un pas nul est refusé', () => profilCoupe(gradinsCoupe, facadeCoupe, 6, 1000, 0), 'supérieur à zéro')
 
+
+// ── Le conseil ne sort jamais une enceinte de la salle ──────────────────────
+//
+// **Defaut reel, signale par l'utilisateur** : « faire un meilleur emplacement »
+// sortait l'enceinte du rectangle prefait. La recherche fait varier
+// l'ecartement et rien ne verifiait que les positions restaient dans la salle.
+//
+// **Le cas est choisi pour discriminer, et le premier ne discriminait pas.**
+// Des enceintes serrees au centre ne peuvent pas atteindre les murs : le
+// facteur d'ecartement explore est borne, donc le test passait aussi sans la
+// contrainte — il ne prouvait rien. Il faut des enceintes deja larges, posees
+// pres des parois : les ecarter encore les sort de la salle.
+{
+  const salleEtroite = [
+    {
+      nom: 'Parterre',
+      contour: [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 10, y: 14 },
+        { x: 0, y: 14 }
+      ],
+      hauteurSol: 0
+    }
+  ]
+  const serrees = [
+    { nom: 'G', position: { x: 1, y: 1, z: 4 }, visee: { x: 3, y: 10, z: 1 }, niveau1m: 100, ouverture: ouvertureLarge },
+    { nom: 'D', position: { x: 9, y: 1, z: 4 }, visee: { x: 7, y: 10, z: 1 }, niveau1m: 100, ouverture: ouvertureLarge }
+  ]
+
+  const conseil = conseillerPlacement(salleEtroite, serrees, 1000, 2)
+  const proposees = appliquerReglage(serrees, conseil.propose)
+
+  // Le domaine tolere une marge egale a l'ecartement actuel (0.8 m ici).
+  const dedans = proposees.every(
+    (e) => e.position.x >= -2 && e.position.x <= 12 && e.position.y >= -2 && e.position.y <= 16
+  )
+  verifier(
+    'le placement conseille garde les enceintes dans la salle',
+    dedans,
+    JSON.stringify(proposees.map((e) => [e.position.x.toFixed(1), e.position.y.toFixed(1)]))
+  )
+
+  verifier(
+    'et il evalue quand meme des candidats',
+    conseil.essais > 0,
+    String(conseil.essais)
+  )
+}
+
 console.log(echecs === 0 ? '\nACOUSTIQUE : TOUS LES TESTS PASSENT' : `\n${echecs} TEST(S) EN ECHEC`)
 process.exitCode = echecs === 0 ? 0 : 1
