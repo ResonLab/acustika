@@ -189,6 +189,7 @@ const TEXTES = {
     fr: 'Importer des données polaires…',
     en: 'Import polar data…'
   },
+  'biblio.saisiMain': { fr: 'Saisi à la main', en: 'Entered by hand' },
   'biblio.polaireLu': {
     fr: 'Lu depuis {nom} : {bandes} bande(s). Vérifiez avant d’enregistrer.',
     en: 'Read from {nom}: {bandes} band(s). Check before saving.'

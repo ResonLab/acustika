@@ -31,7 +31,7 @@ export default function Bibliotheque({
       marque: '',
       niveau1m: 96,
       ouverture,
-      source: 'Saisi à la main'
+      source: t('biblio.saisiMain')
     })
   }
 

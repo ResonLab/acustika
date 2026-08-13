@@ -11,6 +11,7 @@ const SUITES = [
   ['Application', 'application.mjs'],
   ['Données polaires', 'polaire.mjs'],
   ['Traductions', 'traductions.mjs'],
+  ['Effets React et leurs dépendances', 'effets-react.mjs'],
   ['Cohérence du site', 'coherence-site.mjs'],
   ['Cohérence des conditions', 'coherence-conditions.mjs'],
   ['Cohérence du guide', 'coherence-guide.mjs']
