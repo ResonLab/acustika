@@ -271,6 +271,55 @@
     color: var(--fg-dim);
     font-size: 14.5px;
   }
+
+  /* ── Les raffinements repris d'Ohmnia ──────────────────────────────────────
+     Le site d'Ohmnia avait quatre choses que les autres n'avaient pas. Elles
+     sont portees ici telles quelles : une seule maison, une seule facon de
+     bouger. Chacune se desactive proprement si le lecteur demande moins
+     d'animation — ce n'est pas une option de confort, c'est un reglage systeme
+     souvent pose pour de vraies raisons de sante. */
+
+  /* 1. Un leger flou qui se leve : ce qui arrive semble se mettre au point. */
+  .js .reveal { filter: blur(5px); transition-property: opacity, transform, filter; }
+  .js .reveal.vu { filter: blur(0); }
+
+  /* 2. Les cartes basculent depuis le fond, en perspective. Le point de fuite
+        est en haut du bloc : elles se redressent vers le lecteur. */
+  .js .grille .reveal,
+  .js .cards .reveal {
+    transform: translateY(32px) rotateX(7deg);
+    transform-origin: 50% 0%;
+  }
+  .js .grille .reveal.vu,
+  .js .cards .reveal.vu { transform: none; }
+
+  /* 3. Les titres se resserrent en se posant : discret, mais on le sent. */
+  .js .reveal h2 { letter-spacing: -.045em; transition: letter-spacing 1s var(--ease) var(--d, 0s); }
+  .js .reveal.vu h2 { letter-spacing: -.02em; }
+
+  /* 4. Le hero s'efface en remontant quand on quitte le haut de page.
+        **Pilote par la position de defilement, pas par une minuterie** : la
+        marche arriere est donc exacte, et remonter le rend exactement comme on
+        l'a laisse. Les navigateurs sans cette fonction l'ignorent sans degat. */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .hero {
+        animation-name: heroSortie;
+        animation-duration: auto; /* obligatoire : pilotee par le defilement */
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: view();
+        animation-range: exit 0% exit 100%;
+      }
+    }
+  }
+  @keyframes heroSortie { to { opacity: .18; transform: translateY(-52px) scale(.975); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .js .reveal { filter: none !important; }
+    .js .grille .reveal, .js .cards .reveal { transform: none !important; }
+    .js .reveal h2, .js .reveal.vu h2 { letter-spacing: -.02em; transition: none; }
+  }
 </style>
 </head>
 
