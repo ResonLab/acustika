@@ -249,12 +249,31 @@ canvas {
   display: block;
 }
 
+/* ── Le panneau latéral ───────────────────────────────────────────────────
+   **Il descendait indéfiniment**, et c'est un défaut plus grave qu'il n'en a
+   l'air : le réglage de pente et le bouton « Supprimer » de chaque zone vivent
+   tout en bas. Avec quelques zones, ils passaient sous le bas de la fenêtre —
+   l'utilisateur a donc signalé qu'on ne pouvait pas supprimer une zone, alors
+   que le bouton existait depuis toujours. *Un mécanisme peut exister dans le
+   code et rester inatteignable à l'écran*, et c'est la deuxième fois que la
+   maison le paie.
+
+   Le panneau tient maintenant dans la hauteur visible et défile pour son
+   propre compte. Le plan, lui, ne bouge pas : on règle une zone en la
+   regardant, pas en la perdant de vue. */
 .panneau {
   background: var(--carte);
   border: 1px solid var(--trait);
   border-radius: 10px;
   padding: 1rem;
+  /* La hauteur de la fenêtre moins l'en-tête et les marges. */
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
+  /* Sans cela, le panneau s'étire à la hauteur de son voisin dans la grille et
+     `max-height` ne mord jamais. */
+  align-self: start;
 }
+
 
 .panneau h2:first-child {
   margin-top: 0;
