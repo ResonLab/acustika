@@ -148,10 +148,12 @@ function fabriquer(guide, source, cible, langue, titre, description) {
     .replace(/<meta name="description" content=".*?" \/>/, `<meta name="description" content="${description}" />`)
     .replace(/<meta property="og:description" content=".*?" \/>/, `<meta property="og:description" content="${description}" />`)
 
-  // Les ancres de la page d'accueil ne mènent nulle part ici.
-  for (const ancre of ['#ce-quelle-fait', '#honnetete', '#principes']) {
-    page = page.replaceAll(`href="${ancre}"`, `href="index.html${ancre}"`)
-  }
+  // **Toutes** les ancres du bandeau renvoient à l'accueil, pas une liste
+  // choisie à la main. Les sections d'une page d'accueil ne portent pas les
+  // mêmes noms d'une application à l'autre — `#modules` ici, `#fonctionnalites`
+  // là — et une liste figée laissait des ancres mortes sur le guide, que seul
+  // le contrôle du site voyait. La règle générale n'a rien à maintenir.
+  page = page.replaceAll('href="#', 'href="index.html#')
 
   // Le sélecteur de langue relie les deux guides entre eux.
   page =

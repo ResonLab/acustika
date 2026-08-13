@@ -71,10 +71,19 @@ if (francais.length !== anglais.length) {
   echec(`${francais.length} textes en français, ${anglais.length} en anglais`)
 }
 
-// Une traduction vide laisserait les comptes égaux et ferait disparaître une
-// étape entière de la page anglaise, sans que rien ne le signale.
+/**
+ * Une traduction vide laisserait les comptes égaux et ferait disparaître une
+ * étape entière de la page anglaise, sans que rien ne le signale.
+ *
+ * **On teste le vide, pas la longueur.** Un premier jet refusait tout texte de
+ * moins de dix caractères — et « Receipts », « Backups » sont des titres
+ * parfaitement traduits de huit et sept caractères. Le contrôle criait au vol
+ * sur du travail juste. C'est la deuxième fois qu'un proxy de longueur produit
+ * un faux échec dans cette maison, et **un faux échec use un contrôle aussi
+ * sûrement qu'un faux succès**.
+ */
 for (const [numero, texte] of anglais.entries()) {
-  if (texte.trim().length < 10) {
+  if (texte.trim().length === 0) {
     echec(
       `le texte anglais n° ${numero + 1} est vide ou quasi vide — ` +
         `en français : « ${(francais[numero] ?? '').slice(0, 50)}… »`
@@ -82,7 +91,20 @@ for (const [numero, texte] of anglais.entries()) {
   }
 }
 
-const normaliser = (texte) => texte.replaceAll("\\'", "'")
+/**
+ * Le texte de la source, tel qu il apparait dans la page.
+ *
+ * **Le caractere & s ecrit &amp; en HTML**, et « Audit & clotures » ne se
+ * retrouvait donc jamais tel quel dans le fichier produit : le controle
+ * annoncait un texte disparu alors que la page etait parfaitement juste.
+ * Les memes echappements que publier-guide.mjs, dans le meme ordre.
+ */
+const normaliser = (texte) =>
+  texte
+    .replaceAll("\'", "'")
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
 
 for (const texte of francais) {
   if (!pageFr.includes(normaliser(texte))) {

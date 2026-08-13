@@ -261,6 +261,16 @@
     .card:hover, .btn:hover { transform: none; }
     .progres { display: none; }
   }
+
+  /* Le piege d'une etape du guide : ce qu'on ne devine pas, et qui coute une
+     soiree. Il doit se distinguer du texte courant sans crier. */
+  .piege {
+    border-left: 3px solid var(--accent, #B58CFF);
+    padding-left: 12px;
+    margin-top: 12px;
+    color: var(--fg-dim);
+    font-size: 14.5px;
+  }
 </style>
 </head>
 
@@ -275,6 +285,7 @@
       <span class="nom">Acustika</span>
     </a>
     <nav class="nav">
+      <a href="guide.html">Par où commencer</a>
       <a href="index.html#ce-quelle-fait">Ce qu'elle fait</a>
       <a href="index.html#honnetete" class="hide-sm">Ce qu'elle ne fait pas</a>
       <a href="index.html#principes" class="hide-sm">Nos principes</a>
