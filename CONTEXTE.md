@@ -9,15 +9,14 @@ plan où l'on dessine ses zones, où l'on pose ses enceintes et où la couvertur
 recalcule ; une vue en coupe ; des retards d'alignement ; **et le conseil de
 placement, qui explique pourquoi**.
 
-**La 0.2.0 est construite** pour Windows et Linux — `.exe`, AppImage et `.deb`,
-par GitHub Actions — et **attend en brouillon** sur la page des releases. Elle ne
-sera téléchargeable qu'une fois publiée à la main. La 0.1.0 encore en ligne est
-antérieure au conseil de placement, à la coupe, aux retards et à l'import
-polaire : **c'est elle que téléchargent les visiteurs aujourd'hui.**
+**La 0.2.0 est publiée** pour Windows et Linux — `.exe`, AppImage et `.deb` —
+et c'est elle que téléchargent les visiteurs. S'y ajoutent depuis : les formes
+préfaites, le moteur de salle (RT60, distance critique, champ réverbéré) et
+l'estimation d'intelligibilité.
 
 ```bash
 cd Acustika && npm install && npm run dev
-cd Acustika && npm run verifier   # typecheck + 6 suites
+cd Acustika && npm run verifier   # typecheck + 8 suites
 ```
 
 Ce que l'application sait faire aujourd'hui :
@@ -37,7 +36,10 @@ Ce que l'application sait faire aujourd'hui :
 | **Retards d'alignement** | les rappels attendent la façade, marge de localisation comprise |
 | **Conseil de placement** | 315 placements essayés, et **l'explication de ce que chaque réglage apporte** |
 | **Échelle et curseur** | légende fidèle à la carte, niveau lu sous la souris |
-| **Français et anglais** | 101 clés, sélecteur dans la barre |
+| **Formes préfaites** | rectangle, carré, cercle, demi-cercle, éventail, fer à cheval — exactes par construction |
+| **La salle** | matériaux par bande, RT60 Sabine et Eyring, **distance critique**, champ réverbéré |
+| **Intelligibilité** | STI estimé par la formule de Peutz, le pire point et la part du public sous 0,50 |
+| **Français et anglais** | 175 clés, sélecteur dans la barre |
 | **Conditions d'utilisation** | écran d'acceptation bloquant, pages publiques déduites du texte source |
 
 Le projet est un **fichier**, pas une ligne de base : une simulation se
@@ -84,6 +86,55 @@ réflexions, ni réverbération, ni déphasage entre sources. Il calcule un cham
 direct. L'addition suppose des sources décorrélées ; deux sources cohérentes
 peuvent en réalité s'ajouter jusqu'à +6 dB ou s'annuler. **La page le dit
 explicitement à l'écran**, et l'application devra continuer de le dire.
+
+---
+
+
+## Le guide de prise en main
+
+**Le site disait ce que fait l'application et ce qu'elle ne fait pas. Il ne
+disait nulle part par où commencer.** Quelqu'un qui télécharge se retrouve
+devant une application vide sans savoir quoi cliquer, et c'est là qu'on perd
+les gens — pas à la page d'accueil.
+
+`src/partage/guide.ts` porte le texte dans les deux langues et **nulle part ailleurs** :
+`scripts/publier-guide.mjs` en déduit `docs/guide.html` et `docs/en/guide.html`,
+`scripts/guide-pdf.mjs` en tire les deux PDF joints aux releases. Un guide
+recopié à la main divergerait au premier correctif — et c'est le document qu'on
+emporte, donc celui qu'on croit.
+
+**L'ordre des étapes n'est pas décoratif** : c'est celui dans lequel
+l'application ne refuse rien. `tests/coherence-guide.mjs` le vérifie, en plus de
+refuser qu'une page diverge de la source, qu'une traduction soit vide, ou qu'une
+étape perde son **piège**. Les pièges sont la moitié de la valeur : ce sont les
+choses qu'on ne devine pas et qui coûtent une soirée.
+
+```bash
+npm run guide:publier   # les deux pages
+npm run guide:pdf       # les deux PDF, dans release/
+```
+
+**Trois défauts de ce mécanisme, trouvés en le portant d'une application à
+l'autre**, et corrigés dans les quatre dépôts :
+
+· un seuil de longueur prenait « Receipts » et « Backups » — des titres anglais
+  parfaitement traduits — pour des traductions vides. On teste désormais le
+  vide, pas la longueur. **Un faux échec use un contrôle aussi sûrement qu'un
+  faux succès** ;
+· le caractère `&` s'écrit `&amp;` en HTML : le contrôle annonçait un texte
+  disparu alors que la page était juste ;
+· une liste figée d'ancres à réécrire laissait des ancres mortes sur le guide,
+  les sections d'une page d'accueil ne portant pas les mêmes noms d'une
+  application à l'autre. Toutes les ancres renvoient maintenant à l'accueil.
+
+**Le PDF a révélé un bug qui traînait dans la maison depuis des semaines** :
+« `fabriquer-icones.mjs` échoue au-delà de la première image ». Ce n'est ni le
+chemin ni le fichier temporaire — **créer une seconde `BrowserWindow` après
+avoir travaillé dans la première fait échouer son chargement** sur `ERR_FAILED`.
+Une seule fenêtre réutilisée, et les deux PDF sortent. *Une hypothèse a été
+suivie puis abandonnée, et elle est notée dans le code : `loadFile` produit bien
+sous Windows une adresse mêlant `file:///` et des antislashs. C'est vrai, c'est
+corrigé, et ça n'a rien changé.*
 
 ---
 
