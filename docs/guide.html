@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Acustika — la couverture sonore d'une salle, et où poser les enceintes</title>
-<meta name="description" content="Acustika calcule et affiche la couverture sonore d'une salle, et propose où placer les enceintes : hauteur, angle, écartement, retards. Zones dessinées librement, gradins, formats ouverts. Vos projets restent sur votre ordinateur." />
+<title>Acustika — par où commencer</title>
+<meta name="description" content="Le guide de prise en main d'Acustika : bibliothèque, salle, enceintes, matériaux, conseil. Dans cet ordre, et pourquoi." />
 <link rel="icon" href="acustika.svg" type="image/svg+xml" />
 <meta property="og:title" content="Acustika" />
-<meta property="og:description" content="La couverture sonore d'une salle, calculée et affichée — et où poser les enceintes. Vos projets restent chez vous." />
+<meta property="og:description" content="Le guide de prise en main d'Acustika : bibliothèque, salle, enceintes, matériaux, conseil. Dans cet ordre, et pourquoi." />
 <meta property="og:type" content="website" />
 
 <script>
@@ -261,16 +261,6 @@
     .card:hover, .btn:hover { transform: none; }
     .progres { display: none; }
   }
-
-  /* Le piege d'une etape du guide : ce qu'on ne devine pas, et qui coute une
-     soiree. Il doit se distinguer du texte courant sans crier. */
-  .piege {
-    border-left: 3px solid var(--accent, #B58CFF);
-    padding-left: 12px;
-    margin-top: 12px;
-    color: var(--fg-dim);
-    font-size: 14.5px;
-  }
 </style>
 </head>
 
@@ -285,12 +275,11 @@
       <span class="nom">Acustika</span>
     </a>
     <nav class="nav">
-      <a href="guide.html">Par où commencer</a>
-      <a href="#ce-quelle-fait">Ce qu'elle fait</a>
-      <a href="#honnetete" class="hide-sm">Ce qu'elle ne fait pas</a>
-      <a href="#principes" class="hide-sm">Nos principes</a>
+      <a href="index.html#ce-quelle-fait">Ce qu'elle fait</a>
+      <a href="index.html#honnetete" class="hide-sm">Ce qu'elle ne fait pas</a>
+      <a href="index.html#principes" class="hide-sm">Nos principes</a>
       <a href="https://github.com/ResonLab/acustika">GitHub</a>
-      <a href="en/" class="langue" hreflang="en">EN</a>
+      <a href="en/guide.html" class="langue" hreflang="en">EN</a>
       <button class="theme" id="theme" type="button" aria-label="Changer le thème">
         <svg class="i-sombre" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
@@ -306,153 +295,75 @@
 
 <main>
   <section class="hero wrap">
-    <p class="etat-ligne">PUBLIÉ — 0.1.0 · WINDOWS ET LINUX</p>
-    <h1>La carte, et <span class="grad-text">la réponse</span>.</h1>
-    <p class="chapo">
-      Acustika calcule la couverture sonore de votre salle et l'affiche. Et surtout, elle propose
-      <em>où</em> poser les enceintes — pas seulement une carte qu'il faut savoir lire.
-    </p>
-    <div class="actions">
-      <a class="btn" href="https://github.com/ResonLab/acustika/releases/latest">Télécharger — Windows et Linux</a>
-      <a class="btn btn-ghost" href="carte-couverture.html">Voir une carte de couverture</a>
-      <a class="btn btn-ghost" href="#honnetete">Ce qu'elle ne fait pas</a>
-    </div>
+    <p class="etat-ligne">GUIDE DE PRISE EN MAIN</p>
+    <h1>Par où <span class="grad-text">commencer</span>.</h1>
+    <p class="chapo">Bibliothèque, salle dessinée, enceintes posées, salle décrite, puis conseil. Cet ordre-là, et pas un autre : c’est celui dans lequel l’application ne refuse rien — et où les chiffres veulent dire quelque chose.</p>
   </section>
 
-  <section id="ce-quelle-fait" class="wrap">
-    <h2 class="titre reveal">Décrire la salle, lire la couverture</h2>
-    <p class="intro reveal" style="--d:.06s">
-      Une salle n'est pas un rectangle. On dessine ses zones à la souris, on leur donne leur pente,
-      on pose les enceintes et on les vise : la carte se recalcule à chaque geste.
-    </p>
-
-    <div class="cards deux">
-      <div class="card reveal">
-        <span class="num">ÉCRIT</span>
-        <h3>Des zones dessinées librement</h3>
-        <p>Point par point, de forme quelconque, plusieurs par projet. Une forme en L exclut bien
-        son creux, là où un simple rectangle englobant l'aurait accepté.</p>
-        <p><strong>Avec leur pente</strong>, en pourcentage : des gradins de 8 m à 15 % montent de
-        1,20 m, et les oreilles montent avec le sol.</p>
-      </div>
-      <div class="card reveal" style="--d:.06s">
-        <span class="num">ÉCRIT</span>
-        <h3>Une carte de couverture</h3>
-        <p>Recalculée à chaque geste, sur une échelle de 24 dB, avec la moyenne et l'écart de
-        chaque zone.</p>
-        <p><strong>C'est l'écart de toute la salle qui compte</strong>, pas la moyenne des écarts.
-        Une salle au parterre régulier et au balcon 12 dB en dessous n'est pas bien couverte, même
-        si chaque zone prise à part l'est.</p>
-      </div>
-      <div class="card reveal" style="--d:.12s">
-        <span class="num">ÉCRIT</span>
-        <h3>Une bibliothèque d'enceintes</h3>
-        <p>On choisit un modèle avant de le poser, au lieu de tout ressaisir à chaque projet.
-        L'ouverture se règle <strong>bande par bande</strong>.</p>
-        <p>Une enceinte est très directive dans l'aigu et presque omnidirectionnelle dans le grave :
-        <strong>un calcul à une seule fréquence est trompeur</strong> et donnerait de mauvais
-        conseils.</p>
-      </div>
-      <div class="card reveal" style="--d:.18s">
-        <span class="num">ÉCRIT</span>
-        <h3>Le conseil de placement</h3>
-        <p>L'application essaie plusieurs placements et retient celui dont la couverture est la plus
-        régulière — hauteur, angle, écartement, retards.</p>
-        <p>Puis elle explique <strong>pourquoi</strong> : ce que ce placement gagne, et sur quel
-        critère. Sans explication, personne ne ferait confiance au résultat, et l'outil ne servirait
-        à rien.</p>
-        <p><strong>Une proposition, jamais une certitude.</strong> Le calcul porte sur le champ
-        direct — ni réflexions, ni réverbération, ni déphasage — et la salle réelle ne ressemble
-        jamais au modèle. Une carte de couleurs est très convaincante même quand elle est fausse ;
-        les <a href="conditions.html">conditions d'utilisation</a> le disent sans détour.</p>
-      </div>
+  <section class="wrap">
+    <h2 class="titre reveal">1. Remplir la bibliothèque</h2>
+    <p class="intro reveal">On commence toujours par là. On ne pose pas une enceinte qui n’existe pas : sans modèle en bibliothèque, le plan n’a rien à vous proposer.</p>
+    <div class="card reveal">
+      <h3>Saisir une enceinte</h3>
+      <p>Onglet Bibliothèque. Son nom, sa marque, son niveau à un mètre dans l’axe — celui des fiches techniques — et son ouverture à −6 dB, **bande par bande**.</p>
+      <p class="piege"><strong>Le piège</strong> — L’ouverture dépend de la fréquence. Une enceinte est très directive dans l’aigu et presque omnidirectionnelle dans le grave : une valeur unique donnerait de mauvais conseils, et c’est pour cela que le champ est par bande.</p>
     </div>
-  </section>
-
-  <section id="honnetete" class="bande">
-    <div class="wrap">
-      <h2 class="titre reveal">Ce qu'elle ne fait pas</h2>
-      <p class="intro reveal" style="--d:.06s">
-        <strong>Une carte de couleurs est très convaincante, même quand elle est fausse.</strong>
-        C'est la raison pour laquelle cette section existe, et pourquoi l'application répète la même
-        chose à l'écran.
-      </p>
-
-      <div class="cards">
-        <div class="card reveal">
-          <span class="num">CHAMP DIRECT</span>
-          <h3>Ni réflexions, ni réverbération</h3>
-          <p>Acustika calcule un champ direct. Les murs, le public et le mobilier ne sont pas
-          modélisés. Une salle réelle ne ressemble jamais au modèle.</p>
-        </div>
-        <div class="card reveal" style="--d:.06s">
-          <span class="num">SOURCES</span>
-          <h3>Pas de déphasage entre enceintes</h3>
-          <p>L'addition suppose des sources décorrélées : deux sources égales donnent +3 dB, pas
-          +6. Deux sources cohérentes peuvent en réalité monter à +6 dB ou s'annuler.</p>
-        </div>
-        <div class="card reveal" style="--d:.12s">
-          <span class="num">PAS « COMME EASE »</span>
-          <h3>Ni lancer de rayons, ni STI</h3>
-          <p>EASE et ses semblables, ce sont des décennies de travail par des équipes
-          d'acousticiens. Promettre la même chose reviendrait à livrer des cartes fausses avec
-          l'aplomb des vraies.</p>
-        </div>
-      </div>
-
-      <p class="intro reveal" style="--d:.18s; margin-top:34px">
-        Ce qui est atteignable est déjà utile, et déjà écrit : la couverture, la pression sonore,
-        les retards d'appoint, et le conseil de placement. <strong>Le conseil reste une proposition,
-        jamais une certitude.</strong>
-      </p>
+    <div class="card reveal">
+      <h3>Importer des données polaires</h3>
+      <p>Plutôt que de tout saisir : exportez un tableau texte depuis votre visualiseur, angles en colonnes ou en lignes — les deux dispositions sont reconnues. L’ouverture à −6 dB est déduite par interpolation entre vos relevés.</p>
+      <p class="piege"><strong>Le piège</strong> — Les fichiers CLF binaires (.cf1, .cf2) ne sont pas lus, et ne le seront pas. Leur structure n’est pas publique : un lecteur qui devinerait produirait des directivités fausses, donc des placements faux **avec l’aplomb des vrais**.</p>
     </div>
-  </section>
 
-  <section id="formats" class="wrap">
-    <h2 class="titre reveal">Des formats ouverts, et un projet qui vous appartient</h2>
-    <p class="intro reveal" style="--d:.06s">
-      Un projet est un <strong>fichier</strong>, pas une ligne dans une base : une simulation se
-      transmet, s'archive avec un dossier de chantier, se compare.
-    </p>
-
-    <div class="cards">
-      <div class="card reveal">
-        <span class="num">.ACUSTIKA</span>
-        <h3>Du JSON lisible</h3>
-        <p>Dans dix ans, on l'ouvrira encore avec un éditeur de texte. C'est exactement le reproche
-        qu'on fait aux formats fermés.</p>
-      </div>
-      <div class="card reveal" style="--d:.06s">
-        <span class="num">PAS DE GLL</span>
-        <h3>CLF, SOFA, ou du CSV</h3>
-        <p>GLL est un format fermé, sans spécification publique. Acustika vise <strong>CLF</strong>,
-        créé comme alternative ouverte, et <strong>SOFA</strong> (norme AES69).</p>
-      </div>
-      <div class="card reveal" style="--d:.12s">
-        <span class="num">LE FILET</span>
-        <h3>La saisie à la main marche toujours</h3>
-        <p>Beaucoup de fabricants publient leurs diagrammes polaires en CSV. Quelques angles et
-        quelques bandes suffisent à une carte utile. L'import CSV existe déjà.</p>
-      </div>
+    <h2 class="titre reveal">2. Dessiner la salle</h2>
+    <p class="intro reveal">Une zone d’écoute est un contour, une altitude et une pente. C’est ce qui remplace la « salle rectangulaire » des outils simplistes.</p>
+    <div class="card reveal">
+      <h3>Poser une forme préfaite</h3>
+      <p>Onglet Plan, bouton Forme préfaite. Rectangle, carré, cercle, demi-cercle, éventail, fer à cheval : vous saisissez les cotes, la forme se pose au centre et reste déplaçable.</p>
+      <p class="piege"><strong>Le piège</strong> — Un rectangle dessiné point par point à la souris n’en est pas un : les côtés ne sont pas parallèles, l’aire est fausse de quelques pour cent, et **toute la réverbération hérite de cette approximation**. Si votre salle est une forme simple, posez-la ; ne la dessinez pas.</p>
     </div>
-  </section>
+    <div class="card reveal">
+      <h3>Les gradins et les balcons</h3>
+      <p>Chaque zone porte son altitude et sa pente en pourcent. Un balcon est une seconde zone, plus haute. Les oreilles montent avec le sol.</p>
+      <p class="piege"><strong>Le piège</strong> — L’écart affiché est celui de **toute la salle**, pas la moyenne des écarts par zone. Un parterre régulier avec un balcon 12 dB en dessous n’est pas une salle bien couverte, même si chaque zone prise isolément l’est.</p>
+    </div>
 
-  <section id="principes" class="bande">
-    <div class="wrap">
-      <h2 class="titre reveal">Ce à quoi nous tenons</h2>
-      <p class="intro reveal" style="--d:.06s">
-        Acustika suit les règles de <a href="https://resonlab.github.io">ResonLab</a>, les mêmes que
-        pour Ohmnia et Scenika.
-      </p>
+    <h2 class="titre reveal">3. Poser les enceintes</h2>
+    <p class="intro reveal">Un placement se juge à l’œil et se corrige au doigt. La carte se recalcule à chaque geste.</p>
+    <div class="card reveal">
+      <h3>Poser, orienter, régler</h3>
+      <p>Clic pour poser, glisser pour déplacer. Un second point donne la visée : c’est lui qui définit l’axe. Puis la hauteur d’accrochage, le gain et le retard.</p>
+      <p class="piege"><strong>Le piège</strong> — Vue du dessus, une enceinte accrochée à 4 m qui vise le fond ressemble exactement à une enceinte posée à 1 m qui vise ses pieds : c’est la même flèche. **Un piqué se juge de profil** — ouvrez la vue en coupe.</p>
+    </div>
+    <div class="card reveal">
+      <h3>Aligner les rappels</h3>
+      <p>Onglet Retards. Acustika calcule ce qu’il faut appliquer pour qu’un rappel arrive **après** la façade, marge de localisation comprise.</p>
+      <p class="piege"><strong>Le piège</strong> — La marge n’est pas décorative : l’oreille localise la source qui arrive en premier. Sans elle, l’auditeur entend le renfort et non la scène — exactement ce qu’on cherche à éviter en posant un rappel.</p>
+    </div>
 
-      <div class="cards">
-        <div class="card reveal"><span class="num">01</span><h3>Aucune connexion</h3><p>Pas de compte, pas d'abonnement, pas de statistiques d'usage. Vos projets ne quittent pas votre machine.</p></div>
-        <div class="card reveal" style="--d:.06s"><span class="num">02</span><h3>Pas de serveur, volontairement</h3><p>Acustika travaille sur des fichiers de projet, pas sur des données d'entreprise partagées. Deux personnes ne modifient pas une simulation en même temps.</p></div>
-        <div class="card reveal" style="--d:.12s"><span class="num">03</span><h3>Des messages qui expliquent</h3><p>En français, précis, jamais un message technique brut. Quand le logiciel refuse quelque chose, il dit pourquoi.</p></div>
-        <div class="card reveal" style="--d:.18s"><span class="num">04</span><h3>Rien qu'on ne puisse rouvrir</h3><p>Formats lisibles, code simple, aucun format fermé. C'est un engagement, pas une préférence.</p></div>
-        <div class="card reveal" style="--d:.24s"><span class="num">05</span><h3>Ce qui n'est pas garanti est dit</h3><p>Acustika ne remplace pas un acousticien. Ce qui est indicatif est annoncé comme tel, à l'écran et pas seulement dans les conditions.</p></div>
-        <div class="card reveal" style="--d:.30s"><span class="num">06</span><h3>Vérifié, pas affirmé</h3><p>La physique est éprouvée contre des valeurs connues à la main : −6 dB par doublement de distance, +3 dB pour deux sources égales, 2,9 ms par mètre.</p></div>
-      </div>
+    <h2 class="titre reveal">4. Décrire la salle, et non seulement le vide</h2>
+    <p class="intro reveal">L’étape que tout le monde saute, et celle qui change le plus les résultats. Sans elle, la même carte sort pour une église et pour un studio traité.</p>
+    <div class="card reveal">
+      <h3>Matériaux, hauteur, public</h3>
+      <p>Panneau La salle. Cochez « tenir compte de la salle », saisissez la hauteur sous plafond, les matériaux du sol, du plafond et des murs, et le nombre de spectateurs assis.</p>
+      <p class="piege"><strong>Le piège</strong> — Le public absorbe, et beaucoup : une salle pleine peut avoir deux fois l’absorption de la même salle vide. C’est la première raison pour laquelle une balance faite à vide ne ressemble pas au résultat en représentation.</p>
+    </div>
+    <div class="card reveal">
+      <h3>Lire la distance critique</h3>
+      <p>C’est le chiffre le plus utile de tout le panneau. Au-delà, le champ réverbéré domine le direct : monter le niveau n’améliore plus l’intelligibilité, il faut rapprocher une source ou traiter la salle.</p>
+      <p class="piege"><strong>Le piège</strong> — Dès que la salle est prise en compte, **l’écart de niveau devient trompeur**. Le champ réverbéré est uniforme : il aplatit les écarts. Une salle à 3,5 s de réverbération affiche un écart d’un décibel — ce qui ressemble à une couverture parfaite — avec près de la totalité du public au-delà de la distance critique. Fiez-vous à la part du public hors distance critique, pas à l’écart.</p>
+    </div>
+
+    <h2 class="titre reveal">5. Demander conseil, et savoir ce qu’il vaut</h2>
+    <p class="intro reveal">Acustika propose un placement et explique pourquoi. C’est ce qui la distingue — et c’est aussi ce qu’il faut lire avec le plus de prudence.</p>
+    <div class="card reveal">
+      <h3>Lancer la recherche</h3>
+      <p>Bouton Chercher un meilleur placement. L’application essaie plusieurs centaines de hauteurs, écartements et visées, et retient celle dont la couverture calculée est la plus régulière. Elle dit ensuite ce que chaque réglage apporte à lui seul.</p>
+      <p class="piege"><strong>Le piège</strong> — Le conseil raisonne sur le **champ direct seul**, même quand la salle est décrite. C’est délibéré : le champ réverbéré aplatissant les écarts, un conseil qui l’inclurait préférerait la cathédrale au studio, avec l’air d’avoir raison. Ce qu’un placement contrôle, c’est le direct.</p>
+    </div>
+    <div class="card reveal">
+      <h3>Ce que la carte ne prouve pas</h3>
+      <p>Acustika calcule un champ direct et un champ diffus statistique. Elle ignore les réflexions individuelles, la diffusion et le déphasage entre sources.</p>
+      <p class="piege"><strong>Le piège</strong> — Elle ne voit pas un écho de fond de salle, qui peut détruire l’intelligibilité sans changer ni le RT60 ni la distance critique. Le STI affiché est une estimation par la formule de Peutz, pas le calcul par réponse impulsionnelle d’EASE. Le conseil reste une proposition : la salle réelle ne ressemble jamais au modèle, et cela ne se corrige pas en ajoutant des décimales.</p>
     </div>
   </section>
 </main>

@@ -17,7 +17,9 @@
     "package:win": "electron-vite build && electron-builder --win --publish never",
     "publish:win": "electron-vite build && electron-builder --win --publish always",
     "package:linux": "electron-vite build && electron-builder --linux --publish never",
-    "publish:linux": "electron-vite build && electron-builder --linux --publish always"
+    "publish:linux": "electron-vite build && electron-builder --linux --publish always",
+    "guide:publier": "node scripts/publier-guide.mjs",
+    "guide:pdf": "electron scripts/guide-pdf.mjs"
   },
   "main": "./out/main/index.js",
   "devDependencies": {

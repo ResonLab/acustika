@@ -12,7 +12,8 @@ const SUITES = [
   ['Données polaires', 'polaire.mjs'],
   ['Traductions', 'traductions.mjs'],
   ['Cohérence du site', 'coherence-site.mjs'],
-  ['Cohérence des conditions', 'coherence-conditions.mjs']
+  ['Cohérence des conditions', 'coherence-conditions.mjs'],
+  ['Cohérence du guide', 'coherence-guide.mjs']
 ]
 
 let echecs = 0
