@@ -22,6 +22,19 @@ import { fileURLToPath } from 'node:url'
  *    Scenika, le plus grave, parce que l'élément existe et ne se voit pas ;
  * 4. une règle CSS dont plus aucune classe ne porte le nom — moins grave, mais
  *    c'est la trace d'un morceau d'interface retiré à moitié.
+ *
+ * **Ce qu'il ne voit pas, et il faut le savoir pour ne pas lui faire confiance
+ * au-delà.** Il constate qu'une opération est *appelée quelque part dans un
+ * écran*, pas qu'un geste de l'utilisateur mène jusqu'à cet appel. Vérifié en
+ * retirant le bouton « Modifier » du Parc de Scenika : l'appel restait dans la
+ * fonction d'enregistrement, plus rien ne pouvait l'atteindre, et le contrôle
+ * passait au vert. Seul le retrait de l'appel lui-même le fait échouer.
+ *
+ * Autrement dit il attrape le mécanisme **jamais branché** — le cas
+ * `appliquerRepartition`, celui pour lequel il existe — et pas la branche morte
+ * derrière un bouton disparu. Voir cela demanderait de suivre les états d'un
+ * composant, c'est-à-dire de l'exécuter. **C'est le lancement de l'application
+ * qui couvre ce second cas, et rien d'autre.**
  */
 
 const PROJET = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -61,6 +74,18 @@ function sansCommentaires(texte) {
 
 const codeEcranVif = sansCommentaires(codeEcran)
 
+/**
+ * Le même code, avec les appels en chaîne recollés.
+ *
+ * **Un appel coupé par le formateur est un appel quand même.** `Accueil.tsx`
+ * écrit `window.api.tableauDeBord` puis `.charger(…)` sur la ligne suivante :
+ * cherché d'un seul tenant, `api.tableauDeBord.charger` reste introuvable et le
+ * contrôle accuse à tort une opération d'être hors d'atteinte. C'est le même
+ * piège que le canal IPC qui doit tenir sur la ligne d'`ipcMain.handle(` dans
+ * Ohmnia — sauf qu'ici c'est la vérification qui doit s'adapter, pas le code.
+ */
+const codeEcranRecolle = codeEcranVif.replace(/\s*\.\s*/g, '.')
+
 console.log('\n── Les opérations du pont ──')
 
 // Le pont déclare `domaine: { operation: ... }`. On relève les deux niveaux
@@ -82,7 +107,7 @@ verifier(
   `${operations.length} opération(s) relevée(s)`
 )
 
-const pontOrphelin = operations.filter((op) => !codeEcranVif.includes(`api.${op}`))
+const pontOrphelin = operations.filter((op) => !codeEcranRecolle.includes(`api.${op}`))
 verifier(
   'chaque opération du pont est appelée par un écran',
   pontOrphelin.length === 0,
@@ -140,7 +165,28 @@ const css = readFileSync(join(PROJET, 'src/renderer/src/styles.css'), 'utf8').re
  * sélecteur composé : `.marque strong` déclare bien `.marque`.
  */
 const classesDeclarees = new Set()
-for (const trouve of css.matchAll(/\.([a-zA-Z][\w-]*)/g)) classesDeclarees.add(trouve[1])
+
+/**
+ * Les classes qui paraissent **seules** au moins une fois dans un sélecteur.
+ *
+ * `.appareil-pastille.trad` ne déclare pas une classe `trad` autonome : elle
+ * dit « une pastille, lorsqu'elle est de genre trad ». Le code écrit
+ * `` className={`appareil-pastille ${appareil.genre}`} ``, où le genre vient
+ * des données — aucune chaîne « trad » n'apparaît donc dans le code, et le
+ * contrôle accusait la règle de ne plus servir.
+ *
+ * On distingue les deux par ce qui précède le point : un espace, une virgule,
+ * un combinateur ou le début de la ligne annoncent une classe autonome ; une
+ * lettre annonce un **qualificatif**, dont la vie suit celle de la classe qu'il
+ * qualifie. Seules les autonomes sont réclamées.
+ */
+const classesAutonomes = new Set()
+for (const trouve of css.matchAll(/(^|[\s,>+~(])\.([a-zA-Z][\w-]*)|\.([a-zA-Z][\w-]*)/gm)) {
+  const autonome = trouve[2]
+  const nom = autonome ?? trouve[3]
+  classesDeclarees.add(nom)
+  if (autonome) classesAutonomes.add(nom)
+}
 
 /**
  * Les classes employées par le code, y compris dans un ternaire.
@@ -154,14 +200,107 @@ for (const trouve of css.matchAll(/\.([a-zA-Z][\w-]*)/g)) classesDeclarees.add(t
  * exception étant la porte par laquelle il cesserait de regarder.
  */
 const classesEmployees = new Set()
-for (const trouve of codeEcranVif.matchAll(/className=(?:"([^"]*)"|\{([^}]*)\})/g)) {
-  const brut = (trouve[1] ?? trouve[2] ?? '').replace(/[!=]==?\s*['"`][^'"`]*['"`]/g, '')
-  if (trouve[1] !== undefined) {
-    for (const classe of brut.split(/\s+/)) if (classe) classesEmployees.add(classe)
-    continue
+const prefixesEmployes = new Set()
+
+/**
+ * Un nom de classe, et rien d'autre.
+ *
+ * **Le filtre est le garde-fou du relevé, et il a fallu deux passes.** Un
+ * gabarit `` `carte ${choisi ? 'active' : ''}` `` donnait au premier jet les
+ * jetons `===`, `?`, `:` et `${appareil.id` — signalés comme des classes sans
+ * règle CSS. Ce ne sont pas des classes : ce sont des morceaux d'expression.
+ * Un nom de classe commence par une lettre et ne contient que des lettres, des
+ * chiffres, un tiret ou un souligné ; tout le reste est du bruit, et le bruit
+ * use un contrôle aussi sûrement qu'un faux succès.
+ */
+const estUnNomDeClasse = (jeton) => /^[a-zA-Z][\w-]*$/.test(jeton) && !jeton.endsWith('-')
+
+/**
+ * Le contenu de chaque `className=…`, accolades imbriquées comprises.
+ *
+ * **Un motif `\{([^}]*)\}` s'arrête au premier `}`, donc à celui du `${…}`.**
+ * Sur `` className={`scene-appareil${choisi ? ' choisi' : ''}`} ``, il rendait
+ * un fragment tronqué sans son accolade fermante : le gabarit n'avait plus de
+ * dos, `scene-appareil` disparaissait du relevé, et la règle CSS qui la vise
+ * était accusée de ne plus servir. Ce n'était pas du bruit mais **un trou** —
+ * une classe employée sans règle serait passée dessous de la même façon.
+ *
+ * On compte donc les accolades au lieu de faire confiance à un motif.
+ */
+function contenusDeClassName(source) {
+  const contenus = []
+  const marqueur = /className=(?:"([^"]*)"|\{)/g
+  let trouve
+  while ((trouve = marqueur.exec(source)) !== null) {
+    if (trouve[1] !== undefined) {
+      contenus.push({ litteral: true, texte: trouve[1] })
+      continue
+    }
+    let profondeur = 1
+    let i = marqueur.lastIndex
+    while (i < source.length && profondeur > 0) {
+      if (source[i] === '{') profondeur += 1
+      else if (source[i] === '}') profondeur -= 1
+      i += 1
+    }
+    contenus.push({ litteral: false, texte: source.slice(marqueur.lastIndex, i - 1) })
+    marqueur.lastIndex = i
   }
-  for (const morceau of brut.matchAll(/['"`]([^'"`]*)['"`]/g)) {
-    for (const classe of morceau[1].split(/\s+/)) if (classe) classesEmployees.add(classe)
+  return contenus
+}
+
+for (const trouve of contenusDeClassName(codeEcranVif)) {
+  // **Les opérandes de comparaison sont retirés d'abord.** Dans
+  // `className={outil === 'main' ? 'actif' : ''}`, seule `actif` est une
+  // classe : `main` est le nom d'un outil. Ce retrait et le filtre ci-dessus
+  // couvrent deux bruits différents, et il faut les deux — retirer celui-ci a
+  // fait réapparaître cinq fausses classes d'un coup.
+  const brut = trouve.texte.replace(/[!=]==?\s*['"`][^'"`]*['"`]/g, '')
+  const morceaux = []
+
+  if (trouve.litteral) {
+    morceaux.push(brut)
+  } else {
+    // Les chaînes entre apostrophes ou guillemets, **où qu'elles soient** — y
+    // compris les deux issues d'un ternaire, qui sont de vraies classes.
+    for (const m of brut.matchAll(/'([^']*)'|"([^"]*)"/g)) morceaux.push(m[1] ?? m[2])
+    // Les gabarits : on ne garde que le texte littéral, entre les `${…}`. Le
+    // contenu des `${…}` est déjà couvert par la ligne ci-dessus quand il
+    // porte des chaînes.
+    for (const m of brut.matchAll(/`([^`]*)`/g)) {
+      for (const litteral of m[1].split(/\$\{[^}]*\}/)) morceaux.push(litteral)
+    }
+  }
+
+  for (const morceau of morceaux) {
+    for (const classe of morceau.split(/\s+/)) {
+      if (estUnNomDeClasse(classe)) classesEmployees.add(classe)
+      // Un fragment qui se termine par un tiret est un **préfixe** : le nom
+      // complet se compose à l'exécution, comme `conformite-${statut}`.
+      else if (/^[a-zA-Z][\w-]*-$/.test(classe)) prefixesEmployes.add(classe)
+    }
+  }
+}
+
+/**
+ * Les classes construites à l'exécution comptent comme portées.
+ *
+ * `` className={`conformite-${statut}`} `` produit `conformite-ok`,
+ * `conformite-avertissement` ou `conformite-manquant` selon le résultat du
+ * contrôle. Aucune de ces trois chaînes n'apparaît dans le code, et le préfixe
+ * seul n'est pas une classe : sans cette règle, le contrôle accusait le préfixe
+ * de n'avoir aucune règle **et** les trois règles de ne servir à personne — un
+ * faux échec des deux côtés à la fois.
+ *
+ * On reste volontairement strict : seul un préfixe terminé par un tiret ouvre
+ * ce droit, et il ne couvre que les classes déjà déclarées dans la feuille de
+ * style. Une classe composée qui n'aurait aucune règle reste donc invisible ici
+ * — c'est la limite du procédé, et elle est assumée : la deviner demanderait
+ * d'exécuter le code.
+ */
+for (const prefixe of prefixesEmployes) {
+  for (const declaree of classesDeclarees) {
+    if (declaree.startsWith(prefixe) && declaree !== prefixe) classesEmployees.add(declaree)
   }
 }
 
@@ -189,7 +328,7 @@ const CLASSES_HORS_ECRAN = new Set([
   // Le thème et la racine, posés ailleurs que par du JSX.
   'app'
 ])
-const sansPorteur = [...classesDeclarees].filter(
+const sansPorteur = [...classesAutonomes].filter(
   (c) => !classesEmployees.has(c) && !CLASSES_HORS_ECRAN.has(c)
 )
 verifier(
