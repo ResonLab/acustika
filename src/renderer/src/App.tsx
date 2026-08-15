@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Plan from './pages/Plan'
 import Bibliotheque from './pages/Bibliotheque'
 import ConditionsUtilisation from './components/ConditionsUtilisation'
+import LogoAcustika from './components/LogoAcustika'
 import type { ModeleEnceinte, Projet } from '../../partage/types'
 import { definirLangue, LANGUES, t, traduireErreur, type Langue } from '../../partage/i18n'
 import { VERSION_CONDITIONS } from '../../partage/conditions'
@@ -144,7 +145,7 @@ export default function App(): React.JSX.Element {
     <div className="app">
       <header className="entete">
         <div className="marque">
-          <span className="pastille" />
+          <LogoAcustika taille={30} />
           <div>
             <strong>Acustika</strong>
             <span className="discret">
