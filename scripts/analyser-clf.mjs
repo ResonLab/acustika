@@ -192,7 +192,91 @@ for (const nom of ['cls-3300.CF1', 'Coax8.CF2']) {
   }
 }
 
+/* ── Les ancres, relevées dans CLF Viewer le 15 août 2026 ─────────────────── */
+
+/**
+ * **Ce que l'écran de CLF Viewer dit de `cls-3300.CF1`.**
+ *
+ * C'est le premier point d'appui certain de tout ce travail : des valeurs lues
+ * dans l'outil de référence, pas déduites du binaire. Elles transforment une
+ * hypothèse en quelque chose de vérifiable.
+ *
+ * Le fichier déclare **huit bandes**, de 125 Hz à 16 kHz — la colonne 63 Hz est
+ * vide à l'écran. C'est déjà une correction : les tentatives précédentes en
+ * supposaient dix.
+ */
+const LU_DANS_LE_VISUALISEUR = {
+  bandes: [125, 250, 500, 1000, 2000, 4000, 8000, 16000],
+  sensibilite: [64.8, 69.4, 74.6, 80.7, 83.4, 85.4, 85.9, 86.0],
+  impedance: [6.2, 6.4, 6.8, 7.5, 9.7, 12.9, 9.6, 7.7],
+  qAxial: [1.1, 1.2, 1.5, 4.1, 8.6, 22.8, 36.2, 20.7],
+  largeurHorizontale: [360, 360, 360, 206, 191, 92, 63, 71],
+  largeurVerticale: [360, 360, 360, 86, 44, 21, 8, 46],
+  rayonnement: 'fullsphere'
+}
+
+/** Où une suite de valeurs lues à l'écran se retrouve dans le fichier. */
+function ancrer(valeurs, tampon, tolerance) {
+  const positions = []
+  for (let i = 0; i + valeurs.length * 4 <= tampon.length; i += 4) {
+    let correspond = true
+    for (let k = 0; k < valeurs.length; k += 1) {
+      if (Math.abs(tampon.readFloatLE(i + k * 4) - valeurs[k]) > tolerance) {
+        correspond = false
+        break
+      }
+    }
+    if (correspond) positions.push(i)
+  }
+  return positions
+}
+
+{
+  const tampon = readFileSync(join(PROJET, 'tests/fichiers', 'cls-3300.CF1'))
+  console.log('\n════════ Les ancres lues dans CLF Viewer')
+  for (const [nom, valeurs, tolerance] of [
+    ['sensibilité', LU_DANS_LE_VISUALISEUR.sensibilite, 0.06],
+    ['impédance', LU_DANS_LE_VISUALISEUR.impedance, 0.06],
+    ['Q axial', LU_DANS_LE_VISUALISEUR.qAxial, 0.06]
+  ]) {
+    const positions = ancrer(valeurs, tampon, tolerance)
+    console.log(
+      `  ${nom.padEnd(12)} : ${positions.length ? positions.map((p) => '0x' + p.toString(16)).join(', ') : 'introuvable'}`
+    )
+  }
+  console.log(
+    '\n  Ces trois-là sont des faits : la table électro-acoustique est bien' +
+      '\n  stockée en flottants little-endian, dans cet ordre, et le fichier porte' +
+      '\n  **huit** bandes — pas dix, comme les tentatives précédentes le supposaient.'
+  )
+}
+
 console.log(`
+════════ Une seconde hypothèse, et pourquoi elle est fausse aussi
+
+Munis des largeurs a -6 dB lues a l'ecran, on peut chercher le ballon qui les
+reproduit plutot que celui dont la taille tombe juste. Un candidat est sorti :
+24 x 13 au pas de 15 degres, elevation variant le plus vite, a 0x3ba4. Il
+reproduisait **sept largeurs horizontales sur huit** a quatre degres pres.
+
+Il est faux, et deux controles le montrent :
+
+  · les largeurs **verticales** — que la recherche n'avait pas servi a trouver —
+    sont fausses de 113 degres en moyenne ;
+  · dans six bandes sur huit, la valeur **sur l'axe n'est pas le maximum** du
+    ballon, ce qu'aucune enceinte ne fait.
+
+**Et la coincidence s'explique.** Trois des huit largeurs de reference valent
+360 degres : n'importe quelle courbe large les satisfait. Le « sept sur huit »
+n'etait donc que « quatre valeurs non triviales sur cinq », cherchees parmi
+240 000 combinaisons d'offset, de geometrie et d'ordre. A ce compte-la, le
+hasard produit ce genre de correspondance.
+
+**C'est la deuxieme fois dans la meme journee qu'un decoupage plausible tombe
+devant une verification independante.** La lecon n'est pas qu'il faut chercher
+mieux : c'est qu'un ajustement qui n'a pas ete contredit par une mesure **qu'il
+n'a pas servi a produire** ne prouve rien.
+
 ════════ Une hypothèse séduisante, et pourquoi elle est fausse
 
 L'arithmétique semblait tomber juste : CF2 contenait de quoi loger 30 bandes de

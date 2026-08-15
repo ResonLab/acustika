@@ -539,6 +539,30 @@ Acustika conseille un placement faux avec une explication parfaitement
 articulée. `commun/polaire.js` **reconnaît et refuse** un binaire, avec un
 message qui dit quoi faire.
 
+#### Les ancres de CLF Viewer — 15 août 2026
+
+**L'utilisateur a ouvert `cls-3300.CF1` dans CLF Viewer et fourni la capture.**
+C'est le premier point d'appui certain de tout ce travail : des valeurs lues
+dans l'outil de référence, et non déduites du binaire.
+
+Trois suites de la table électro-acoustique se retrouvent **exactement** dans le
+fichier, en flottants little-endian :
+
+| | Offset |
+|---|---|
+| Sensibilité — 64,8 · 69,4 · 74,6 · 80,7 · 83,4 · 85,4 · 85,9 · 86,0 dB | `0x1248` |
+| Impédance — 6,2 · 6,4 · 6,8 · 7,5 · 9,7 · 12,9 · 9,6 · 7,7 Ω | `0x1270` |
+| Q axial — 1,1 · 1,2 · 1,5 · 4,1 · 8,6 · 22,8 · 36,2 · 20,7 | `0x1338` |
+
+**Et une correction de fond : le fichier porte huit bandes, de 125 Hz à
+16 kHz** — la colonne 63 Hz est vide à l'écran. Toutes les tentatives
+précédentes en supposaient dix.
+
+L'écran donne aussi les largeurs à −6 dB, horizontales
+(360 · 360 · 360 · 206 · 191 · 92 · 63 · 71) et verticales
+(360 · 360 · 360 · 86 · 44 · 21 · 8 · 46), et le rayonnement : **fullsphere**.
+Ce sont les mesures qui permettront de valider — ou de réfuter — un candidat.
+
 #### Ce qui a été tenté le 15 août 2026, et qui a échoué
 
 `scripts/analyser-clf.mjs` relève, de façon reproductible, ce que les deux
@@ -574,6 +598,38 @@ Ce qui manque reste ce qui manquait : **l'ordre**. Quelle bande vient en
 premier, l'azimut avant l'élévation ou l'inverse, et où se trouve le zéro
 angulaire. Trois inconnues qu'aucune arithmétique ne tranche, et dont chacune
 produit une carte crédible et fausse.
+
+#### Une seconde hypothèse, réfutée le même jour
+
+Muni des largeurs lues à l'écran, on peut chercher le ballon qui les **reproduit**
+plutôt que celui dont la taille tombe juste. Un candidat est sorti : 24 × 13 au
+pas de 15°, élévation variant le plus vite, à `0x3ba4`. Il reproduisait **sept
+largeurs horizontales sur huit** à quatre degrés près.
+
+Il est faux, et deux contrôles indépendants le disent :
+
+· les largeurs **verticales** — que la recherche n'avait pas servi à trouver —
+  sont fausses de **113° en moyenne** ;
+· dans six bandes sur huit, la valeur **sur l'axe n'est pas le maximum** du
+  ballon, ce qu'aucune enceinte ne fait.
+
+**Et la coïncidence s'explique.** Trois des huit largeurs de référence valent
+360° : n'importe quelle courbe large les satisfait. Le « sept sur huit » n'était
+donc que « quatre valeurs non triviales sur cinq », cherchées parmi 240 000
+combinaisons d'offset, de géométrie et d'ordre. À ce compte-là, le hasard produit
+ce genre de correspondance.
+
+**C'est la deuxième fois dans la même journée qu'un découpage plausible tombe
+devant une vérification indépendante.** La leçon n'est pas qu'il faut chercher
+mieux : c'est qu'un ajustement qui n'a pas été contredit par une mesure **qu'il
+n'a pas servi à produire** ne prouve rien.
+
+**Ce qui manque encore** : le format ne se déduit pas de huit valeurs par bande
+et de deux largeurs. Il faudrait soit un fichier `.CIF` en texte, soit — plus
+court — relever dans CLF Viewer **quelques valeurs du ballon lui-même**, pas de
+la table : par exemple, à 4 kHz, l'atténuation à 30°, 60° et 90° horizontaux.
+Trois points de la courbe polaire suffiraient à trancher l'ordre et le zéro
+angulaire, là où les largeurs ne donnent qu'un seuil.
 
 **Deux pistes, par ordre de sûreté :**
 
