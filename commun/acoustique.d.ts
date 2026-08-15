@@ -124,7 +124,6 @@ export interface Conseil {
   effets: Effet[]
 }
 
-export function reglageActuel(enceintes: Enceinte[]): Reglage
 export function appliquerReglage(enceintes: Enceinte[], reglage: Reglage): Enceinte[]
 export function conseillerPlacement(
   zones: Zone[],

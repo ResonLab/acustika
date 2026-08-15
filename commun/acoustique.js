@@ -611,10 +611,18 @@ function distanceMaximale(zones, depuis) {
 
 /**
  * Le réglage tel qu'il est aujourd'hui, lu sur les enceintes posées.
+ *
+ * **Interne au module, et c'est délibéré.** Elle était exportée sans que
+ * personne l'importe. Un export mort laisse croire à une porte d'entrée qui
+ * n'en est pas une — même famille que la clé de traduction déclarée et jamais
+ * employée, celle qui avait révélé `appliquerRepartition` dans Lumika. Ce que
+ * les appelants veulent, ils l'ont déjà : `conseillerPlacement` rend le réglage
+ * courant dans `conseil.actuel`.
+ *
  * @param {Enceinte[]} enceintes
  * @returns {Reglage}
  */
-export function reglageActuel(enceintes) {
+function reglageActuel(enceintes) {
   const centre = milieu(enceintes)
   const ecartement =
     enceintes.length < 2
@@ -713,8 +721,25 @@ function domaineAutorise(zones, enceintes, marge = MARGE_DOMAINE) {
   }
 }
 
-/** Ce qu'on s'autorise au-delà de ce que l'utilisateur a dessine, en metres. */
-const MARGE_DOMAINE = 2
+/**
+ * Ce qu'on s'autorise au-delà de ce que l'utilisateur a dessine, en metres.
+ *
+ * **Exportee pour que la verification n'en garde pas une copie.** Une valeur
+ * recopiee a la main dans un test cesse de decrire le module au premier
+ * changement, et le test continue alors de passer en mesurant autre chose.
+ */
+export const MARGE_DOMAINE = 2
+
+/**
+ * Le nombre de placements que la recherche examine quand rien ne la limite.
+ *
+ * Deduit des plages, jamais ecrit a la main : c'est ce qui permet de constater
+ * qu'une contrainte a **effectivement refuse** des candidats. Le jour ou elle
+ * cesse de refuser quoi que ce soit, `essais` redevient egal a ce total, et la
+ * verification le voit.
+ */
+export const CANDIDATS_PAR_RECHERCHE =
+  PLAGES.hauteur.length * PLAGES.facteurEcartement.length * PLAGES.facteurVisee.length
 
 /** Toutes les enceintes tiennent-elles dans le domaine ? */
 function dansLeDomaine(enceintes, domaine) {
@@ -765,6 +790,20 @@ export function conseillerPlacement(zones, enceintes, bande, pas = 1, niveauReve
   const domaine = domaineAutorise(zones, enceintes)
 
   const ecartActuel = ecartDe(actuel)
+
+  // **Un ecart qui n'est pas un nombre doit s'arreter ici, et bruyamment.**
+  // Une zone a laquelle il manque sa hauteur d'oreilles place ses points a une
+  // altitude NaN : tous les niveaux deviennent NaN, l'ecart devient infini, et
+  // la comparaison `ecart < ecartPropose` n'est alors **jamais** vraie. La
+  // recherche tourne entierement, ne retient aucun candidat, et rend le
+  // placement de depart — c'est-a-dire « votre placement est deja le meilleur »,
+  // affirme avec aplomb sur un calcul qui n'a rien mesure. C'est exactement la
+  // panne qu'un fichier de projet ecrit a la main peut produire.
+  if (!Number.isFinite(ecartActuel)) {
+    throw new Error(
+      "Le placement actuel ne donne aucun niveau exploitable : vérifiez que chaque zone d’écoute porte bien une hauteur d’oreilles et un contour d’au moins trois sommets."
+    )
+  }
 
   let meilleur = actuel
   let ecartPropose = ecartActuel

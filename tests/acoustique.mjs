@@ -9,6 +9,7 @@ import {
   altitudeDuSol,
   appliquerReglage,
   BANDES_OCTAVE,
+  CANDIDATS_PAR_RECHERCHE,
   conseillerPlacement,
   calculerCarte,
   couvertureSalle,
@@ -26,6 +27,7 @@ import {
   retardDAppoint,
   retardMs,
   retardsDAlignement,
+  MARGE_DOMAINE,
   MARGE_LOCALISATION_MS,
   profilCoupe
 } from '../commun/acoustique.js'
@@ -640,48 +642,189 @@ refuseAvec('un pas nul est refusé', () => profilCoupe(gradinsCoupe, facadeCoupe
 // sortait l'enceinte du rectangle prefait. La recherche fait varier
 // l'ecartement et rien ne verifiait que les positions restaient dans la salle.
 //
-// **Le cas est choisi pour discriminer, et le premier ne discriminait pas.**
-// Des enceintes serrees au centre ne peuvent pas atteindre les murs : le
-// facteur d'ecartement explore est borne, donc le test passait aussi sans la
-// contrainte — il ne prouvait rien. Il faut des enceintes deja larges, posees
-// pres des parois : les ecarter encore les sort de la salle.
+// **Le cas a ete refait deux fois, et les deux premiers ne discriminaient pas.**
+//
+// Le premier : des enceintes serrees au centre ne peuvent pas atteindre les
+// murs, le facteur d'ecartement explore etant borne.
+//
+// Le second etait pire, et sa panne est instructive. Sa zone portait
+// `hauteurSol` la ou le module lit `hauteurOreilles` : chaque point d'ecoute se
+// retrouvait a une altitude NaN, tous les niveaux devenaient NaN, l'ecart
+// devenait -Infinity, et la comparaison `ecart < ecartPropose - 0.01` n'etait
+// **jamais** vraie. La recherche tournait en entier sans jamais retenir un
+// candidat : le conseil rendait le placement de depart, inchange. Les enceintes
+// restaient donc dans la salle **parce qu'elles ne bougeaient pas**, et le test
+// passait la contrainte entierement desactivee. Un test qui ne peut pas echouer.
+//
+// **Ce qui discrimine vraiment est ailleurs.** Ecarter des enceintes ne les
+// sort de la salle que si elles sont deja **plus larges que le public** — le
+// cas reel d'un systeme accroche en dehors du bloc de sieges. Ici : un public
+// de 10 m de large dans une salle de 20 m de profondeur, deux enceintes posees
+// 3 m au-dela de chaque bord. Sans la contrainte, la recherche les ecarte
+// jusqu'a 2 m **hors de la salle** — et ce placement impossible gagne 3,9 dB
+// contre 3,8 dB pour le meilleur placement applicable. C'est le piege entier :
+// la mauvaise reponse est meilleure sur le critere.
 {
-  const salleEtroite = [
+  const publicEtroit = [
     {
       nom: 'Parterre',
       contour: [
-        { x: 0, y: 0 },
-        { x: 10, y: 0 },
-        { x: 10, y: 14 },
-        { x: 0, y: 14 }
+        { x: 5, y: 0 },
+        { x: 15, y: 0 },
+        { x: 15, y: 20 },
+        { x: 5, y: 20 }
       ],
-      hauteurSol: 0
+      hauteurOreilles: 1.2,
+      altitude: 0,
+      pentePourcent: 0,
+      directionPenteDegres: 90
     }
   ]
-  const serrees = [
-    { nom: 'G', position: { x: 1, y: 1, z: 4 }, visee: { x: 3, y: 10, z: 1 }, niveau1m: 100, ouverture: ouvertureLarge },
-    { nom: 'D', position: { x: 9, y: 1, z: 4 }, visee: { x: 7, y: 10, z: 1 }, niveau1m: 100, ouverture: ouvertureLarge }
+  // **120° et non 90°, et ce n'est pas un detail de decor.** Verifie en
+  // desactivant la contrainte : a 90° et 110°, la recherche ramene d'elle-meme
+  // les enceintes a 6 / 14, dans la salle — le controle geometrique ne pouvait
+  // alors pas echouer. Il faut une ouverture assez large pour que les ecarter
+  // paie encore. La bascule se situe entre 110° et 120°.
+  const ouvertureTresLarge = Object.fromEntries(BANDES_OCTAVE.map((b) => [b, 120]))
+  const largesDejaDehors = [
+    { nom: 'G', position: { x: 2, y: 1, z: 3 }, visee: { x: 2, y: 12, z: 1 }, niveau1m: 100, ouverture: ouvertureTresLarge },
+    { nom: 'D', position: { x: 18, y: 1, z: 3 }, visee: { x: 18, y: 12, z: 1 }, niveau1m: 100, ouverture: ouvertureTresLarge }
   ]
 
-  const conseil = conseillerPlacement(salleEtroite, serrees, 1000, 2)
-  const proposees = appliquerReglage(serrees, conseil.propose)
+  const conseil = conseillerPlacement(publicEtroit, largesDejaDehors, 1000, 2)
+  const proposees = appliquerReglage(largesDejaDehors, conseil.propose)
 
-  // Le domaine tolere une marge egale a l'ecartement actuel (0.8 m ici).
-  const dedans = proposees.every(
-    (e) => e.position.x >= -2 && e.position.x <= 12 && e.position.y >= -2 && e.position.y <= 16
+  // **D'abord : le conseil doit avoir vraiment travaille.** C'est ce garde-fou
+  // qui manquait, et c'est lui qui aurait signale la zone mal formee. Un
+  // conseil qui ne bouge rien satisfait n'importe quelle contrainte.
+  verifier(
+    'le conseil mesure un ecart reel et propose mieux',
+    Number.isFinite(conseil.ecartActuel) && conseil.gain > 0.5 && conseil.effets.length > 0,
+    `ecart ${conseil.ecartActuel.toFixed(2)} -> ${conseil.ecartPropose.toFixed(2)}, ${conseil.effets.length} effet(s)`
   )
+
+  // Les bornes sont calculees ici, a la main, depuis ce que l'utilisateur a
+  // dessine : le public va de 5 a 15, les enceintes de 2 a 18, donc l'extreme
+  // est 2 et 18. Seule la marge vient du module — la recopier la ferait
+  // silencieusement mentir le jour ou elle change.
+  const xMin = 2 - MARGE_DOMAINE
+  const xMax = 18 + MARGE_DOMAINE
+  const dedans = proposees.every((e) => e.position.x >= xMin && e.position.x <= xMax)
   verifier(
     'le placement conseille garde les enceintes dans la salle',
     dedans,
-    JSON.stringify(proposees.map((e) => [e.position.x.toFixed(1), e.position.y.toFixed(1)]))
+    `x ${proposees.map((e) => e.position.x.toFixed(1)).join(' / ')} — autorise [${xMin}, ${xMax}]`
   )
 
+  // Et la contrainte a bel et bien refuse des candidats : sans elle, la
+  // recherche parcourt la grille entiere. Cette verification-ci mord meme si la
+  // geometrie cessait un jour de discriminer.
   verifier(
-    'et il evalue quand meme des candidats',
-    conseil.essais > 0,
-    String(conseil.essais)
+    'la contrainte refuse effectivement des candidats',
+    conseil.essais > 0 && conseil.essais < CANDIDATS_PAR_RECHERCHE,
+    `${conseil.essais} essais sur ${CANDIDATS_PAR_RECHERCHE} candidats`
   )
 }
+
+// **Les quatre bornes du domaine, chacune eprouvee seule.**
+//
+// Le cas symetrique ci-dessus ne suffisait pas, et c'est le sabotage qui l'a
+// dit : `appliquerReglage` ecarte les deux enceintes symetriquement autour de
+// leur milieu, si bien que dans une salle symetrique elles franchissent les
+// bornes basse et haute **en meme temps**. Refuser sur une seule des deux
+// suffisait alors a rejeter le candidat, et retirer l'autre ne changeait rien.
+// Trois bornes sur quatre pouvaient disparaitre sans que rien echoue.
+//
+// La reponse est une salle **decentree** — le public deborde largement d'un
+// cote — ou une seule borne peut mordre, passee dans les quatre orientations.
+// Le meme dessin donne ainsi quatre epreuves : x bas, x haut, y bas, y haut.
+{
+  const ouvertureTresLarge = Object.fromEntries(BANDES_OCTAVE.map((b) => [b, 120]))
+
+  /** Le dessin de reference : public de -8 a 15, enceintes a 4 et 18. */
+  const contourType = [
+    { x: -8, y: 0 },
+    { x: 15, y: 0 },
+    { x: 15, y: 20 },
+    { x: -8, y: 20 }
+  ]
+  const enceintesType = [
+    { nom: 'G', position: { x: 4, y: 1 }, visee: { x: 4, y: 12 } },
+    { nom: 'D', position: { x: 18, y: 1 }, visee: { x: 18, y: 12 } }
+  ]
+
+  // Les quatre orientations. Une symetrie inverse le sens de parcours du
+  // contour : `pointDansPolygone` doit rester indifferent au sens, et le fait
+  // que les quatre orientations trouvent le meme ecart le montre.
+  const orientations = {
+    'x croissant': (p) => ({ x: p.x, y: p.y }),
+    'x decroissant': (p) => ({ x: -p.x, y: p.y }),
+    'y croissant': (p) => ({ x: p.y, y: p.x }),
+    'y decroissant': (p) => ({ x: p.y, y: -p.x })
+  }
+
+  for (const [sens, tourner] of Object.entries(orientations)) {
+    const zone = [
+      {
+        nom: 'Parterre',
+        contour: contourType.map(tourner),
+        hauteurOreilles: 1.2,
+        altitude: 0,
+        pentePourcent: 0,
+        directionPenteDegres: 90
+      }
+    ]
+    const enceintes = enceintesType.map((e) => ({
+      nom: e.nom,
+      position: { ...tourner(e.position), z: 3 },
+      visee: { ...tourner(e.visee), z: 1 },
+      niveau1m: 100,
+      ouverture: ouvertureTresLarge
+    }))
+
+    const conseil = conseillerPlacement(zone, enceintes, 1000, 2)
+    const proposees = appliquerReglage(enceintes, conseil.propose)
+
+    // Les extremes dessines, releves sur ce que l'on vient de construire.
+    const points = [...zone[0].contour, ...enceintes.map((e) => e.position)]
+    const bornes = {
+      xMin: Math.min(...points.map((p) => p.x)) - MARGE_DOMAINE,
+      xMax: Math.max(...points.map((p) => p.x)) + MARGE_DOMAINE,
+      yMin: Math.min(...points.map((p) => p.y)) - MARGE_DOMAINE,
+      yMax: Math.max(...points.map((p) => p.y)) + MARGE_DOMAINE
+    }
+    const dedans = proposees.every(
+      (e) =>
+        e.position.x >= bornes.xMin &&
+        e.position.x <= bornes.xMax &&
+        e.position.y >= bornes.yMin &&
+        e.position.y <= bornes.yMax
+    )
+
+    verifier(
+      `le domaine tient dans une salle decentree — ${sens}`,
+      dedans && conseil.gain > 0.5,
+      `positions ${proposees
+        .map((e) => `(${e.position.x.toFixed(1)}, ${e.position.y.toFixed(1)})`)
+        .join(' ')} — bornes x [${bornes.xMin}, ${bornes.xMax}] y [${bornes.yMin}, ${bornes.yMax}], gain ${conseil.gain.toFixed(2)}`
+    )
+  }
+}
+
+// Une zone mal formee ne doit plus produire un conseil muet : c'est la panne
+// decrite juste au-dessus, et elle se refuse maintenant au lieu de rendre
+// « votre placement est deja le meilleur » sur un calcul qui n'a rien mesure.
+refuseAvec(
+  'une zone sans hauteur d’oreilles est refusée, pas ignorée',
+  () =>
+    conseillerPlacement(
+      [{ nom: 'Parterre', contour: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 14 }, { x: 0, y: 14 }], hauteurSol: 0 }],
+      posesMal,
+      1000,
+      2
+    ),
+  'hauteur'
+)
 
 console.log(echecs === 0 ? '\nACOUSTIQUE : TOUS LES TESTS PASSENT' : `\n${echecs} TEST(S) EN ECHEC`)
 process.exitCode = echecs === 0 ? 0 : 1
