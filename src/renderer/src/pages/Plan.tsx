@@ -56,6 +56,55 @@ const COULEURS = [
 /** Amplitude de l'échelle de couleurs, en dB sous le maximum. */
 const PLAGE_DB = 24
 
+/** Largeur maximale de la toile en pixels propres, indépendante de sa taille affichée. */
+const LARGEUR_TOILE = 900
+
+/**
+ * Hauteur maximale de la toile.
+ *
+ * **Elle n'existait pas, et la toile suivait aveuglément la proportion de la
+ * salle** : une salle de 12 × 18 m donnait 1350 pixels de haut, affichés 1564,
+ * dans une fenêtre de 827. La page faisait deux écrans et demi, et **on ne
+ * pouvait jamais voir le plan et ses chiffres en même temps** — or c'est
+ * exactement le geste du métier : bouger une enceinte et regarder l'écart.
+ *
+ * Borner la hauteur ne coûte plus rien **depuis qu'on peut agrandir et
+ * déplacer la vue** : ce qu'on perd en taille d'ensemble se retrouve au
+ * Ctrl+molette. Sans le déplacement de vue, ce plafond aurait rendu une salle
+ * profonde illisible ; avec lui, il la rend simplement maniable.
+ */
+const HAUTEUR_TOILE_MAX = 620
+
+/** Le cadrage d'origine : la salle remplit la toile, sans décalage. */
+const VUE_AJUSTEE = { zoom: 1, x: 0, y: 0 }
+
+/** En deçà on ne distingue plus rien ; au-delà on compte les pixels. */
+const ZOOM_MIN = 0.25
+const ZOOM_MAX = 16
+
+/** Un cran de molette. Multiplicatif : agrandir puis réduire doit revenir au même. */
+const PAS_DE_ZOOM = 1.15
+
+/**
+ * En deçà de cet écart en pixels, la grille métrique n'est plus dessinée.
+ *
+ * Un quadrillage plus serré que quelques pixels ne se lit pas : il remplit la
+ * carte d'un gris uniforme qui masque la couverture au lieu de la situer.
+ */
+const GRILLE_LISIBLE_PX = 6
+
+/**
+ * Le pas de la grille de calcul, en mètres.
+ *
+ * **Il était écrit deux fois** : une fois passé à `couvertureSalle()`, une fois
+ * recopié dans la taille des carrés dessinés. Les deux doivent être égaux pour
+ * que la carte pave sans trou ni recouvrement — c'est « une formule = un seul
+ * endroit » appliquée à une constante, et le jour où l'un des deux aurait
+ * changé, la carte serait devenue une grille de points sans que rien ne le
+ * signale.
+ */
+const PAS_CARTE = 0.4
+
 function couleurNiveau(fraction: number): [number, number, number] {
   const t = Math.min(1, Math.max(0, fraction)) * (COULEURS.length - 1)
   const i = Math.min(COULEURS.length - 2, Math.floor(t))
@@ -114,6 +163,32 @@ export default function Plan({
   // Ce qu'on est en train de faire glisser : une enceinte ou sa visée.
   const [glisse, setGlisse] = useState<{ id: string; quoi: 'position' | 'visee' } | null>(null)
   const [erreur, setErreur] = useState('')
+
+  /**
+   * Ce qu'on regarde du plan : un agrandissement, et le point du monde qui
+   * tombe dans le coin haut-gauche de la toile.
+   *
+   * **Le décalage est en mètres, jamais en pixels.** En pixels il faudrait le
+   * recorriger à chaque changement de taille de fenêtre ou de dimensions de
+   * salle, et on l'oublierait quelque part. En mètres il désigne un endroit de
+   * la salle, ce qui garde son sens quoi qu'il arrive à la toile — c'est le
+   * même raisonnement que les positions en fractions du plan de Scenika.
+   *
+   * `zoom` à 1 et décalage nul redonnent exactement le cadrage d'avant : la
+   * salle remplit la toile. **La vue ne fait pas partie du projet** et n'est
+   * pas enregistrée dans le fichier : où l'on regardait en travaillant ne
+   * décrit pas la salle, et deux personnes qui s'échangent un projet n'ont
+   * aucune raison de partager un cadrage.
+   */
+  const [vue, setVue] = useState(VUE_AJUSTEE)
+  /**
+   * Le dernier point de l'écran pendant un déplacement de vue.
+   *
+   * Une référence et non un état : il change à chaque mouvement de souris et
+   * ne se dessine pas. En état, il redéclencherait un rendu par mouvement en
+   * plus de celui que la vue provoque déjà.
+   */
+  const glisseVue = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (!modeleChoisi && enceintesDisponibles.length > 0) setModeleChoisi(enceintesDisponibles[0].id)
@@ -224,7 +299,7 @@ export default function Plan({
         pentePourcent: z.pentePourcent,
         directionPenteDegres: z.directionPenteDegres
       }))
-      return couvertureSalle(zones, enceintesCalcul, projet.bande, 0.4, analyse?.reverbere)
+      return couvertureSalle(zones, enceintesCalcul, projet.bande, PAS_CARTE, analyse?.reverbere)
     } catch (e) {
       setErreur(traduireErreur((e as Error).message))
       return null
@@ -320,24 +395,52 @@ export default function Plan({
     return { pire, partSousSeuil: sousSeuil / total }
   }, [analyse, couverture, enceintesCalcul])
 
-  /** Échelle : combien de pixels pour un mètre. */
-  const echelle = useCallback(() => {
+  /**
+   * Échelle d'ajustement : combien de pixels pour un mètre quand la salle
+   * remplit exactement la toile. C'est ce qui existait seul jusqu'ici.
+   */
+  const echelleAjustee = useCallback(() => {
     const largeurPixels = toile.current?.width ?? 800
     const hauteurPixels = toile.current?.height ?? 600
     return Math.min(largeurPixels / projet.largeur, hauteurPixels / projet.profondeur)
   }, [projet.largeur, projet.profondeur])
 
+  /** Échelle réellement dessinée, agrandissement compris. */
+  const echelle = useCallback(
+    () => echelleAjustee() * vue.zoom,
+    [echelleAjustee, vue.zoom]
+  )
+
+  /**
+   * Mètres → pixels, et l'inverse.
+   *
+   * **Ces deux fonctions sont le seul passage entre le monde et l'écran, et
+   * elles doivent le rester.** Le niveau affiché sous le curseur est lu dans la
+   * grille par le chemin retour : si l'aller et le retour cessaient d'être
+   * exactement inverses, le chiffre annoncé désignerait un autre point que le
+   * pixel survolé — et rien ne le montrerait tant qu'on ne déplace ni n'agrandit
+   * la vue. C'est la règle « une formule = un seul endroit » appliquée à un
+   * système de coordonnées.
+   */
   const versEcran = useCallback(
-    (point: Point2D) => ({ x: point.x * echelle(), y: point.y * echelle() }),
-    [echelle]
+    (point: Point2D) => {
+      const e = echelle()
+      return { x: (point.x - vue.x) * e, y: (point.y - vue.y) * e }
+    },
+    [echelle, vue.x, vue.y]
   )
 
   const versMetres = useCallback(
     (x: number, y: number): Point2D => {
       const e = echelle()
-      return { x: Number((x / e).toFixed(2)), y: Number((y / e).toFixed(2)) }
+      // Arrondi au centimètre : à fort agrandissement on place au centimètre,
+      // et c'est déjà plus fin que ce qu'on accroche sur un vrai pont.
+      return {
+        x: Number((vue.x + x / e).toFixed(2)),
+        y: Number((vue.y + y / e).toFixed(2))
+      }
     },
-    [echelle]
+    [echelle, vue.x, vue.y]
   )
 
   /* ── Dessin ─────────────────────────────────────────────────────────────── */
@@ -353,30 +456,53 @@ export default function Plan({
     pinceau.fillRect(0, 0, canvas.width, canvas.height)
 
     // Grille métrique : sans repère de distance, une carte ne veut rien dire.
-    pinceau.strokeStyle = 'rgba(255,255,255,0.06)'
-    pinceau.lineWidth = 1
-    for (let m = 0; m <= projet.largeur; m += 1) {
-      pinceau.beginPath()
-      pinceau.moveTo(m * e, 0)
-      pinceau.lineTo(m * e, projet.profondeur * e)
-      pinceau.stroke()
-    }
-    for (let m = 0; m <= projet.profondeur; m += 1) {
-      pinceau.beginPath()
-      pinceau.moveTo(0, m * e)
-      pinceau.lineTo(projet.largeur * e, m * e)
-      pinceau.stroke()
+    // **Elle passe par `versEcran` comme tout le reste** : multiplier par
+    // l'échelle sans retirer le décalage la laisserait collée à la toile
+    // pendant que la salle glisse dessous.
+    if (e >= GRILLE_LISIBLE_PX) {
+      pinceau.strokeStyle = 'rgba(255,255,255,0.06)'
+      pinceau.lineWidth = 1
+      for (let m = 0; m <= projet.largeur; m += 1) {
+        const haut = versEcran({ x: m, y: 0 })
+        const bas = versEcran({ x: m, y: projet.profondeur })
+        pinceau.beginPath()
+        pinceau.moveTo(haut.x, haut.y)
+        pinceau.lineTo(bas.x, bas.y)
+        pinceau.stroke()
+      }
+      for (let m = 0; m <= projet.profondeur; m += 1) {
+        const gauche = versEcran({ x: 0, y: m })
+        const droite = versEcran({ x: projet.largeur, y: m })
+        pinceau.beginPath()
+        pinceau.moveTo(gauche.x, gauche.y)
+        pinceau.lineTo(droite.x, droite.y)
+        pinceau.stroke()
+      }
     }
 
     // La couverture, point par point, dans chaque zone.
     if (couverture) {
       const maximum = couverture.maximum
-      const cote = Math.max(2, 0.4 * e)
+      const cote = Math.max(2, PAS_CARTE * e)
       for (const zone of couverture.zones) {
         for (const point of zone.points) {
           const [r, v, b] = couleurNiveau((point.niveau - (maximum - PLAGE_DB)) / PLAGE_DB)
           pinceau.fillStyle = `rgb(${r},${v},${b})`
-          pinceau.fillRect(point.x * e - cote / 2, point.y * e - cote / 2, cote, cote)
+          const p = versEcran(point)
+          // **Les bords sont rabattus sur la grille de pixels.** Des carrés
+          // jointifs posés à des coordonnées fractionnaires sont adoucis sur
+          // leurs quatre côtés, et les demi-pixels laissés entre eux dessinent
+          // un quadrillage sombre par-dessus la carte. Le lecteur le prend pour
+          // une donnée alors qu'il vient du rendu — et une carte de couleurs
+          // est déjà bien assez convaincante sans motif inventé.
+          const gauche = Math.floor(p.x - cote / 2)
+          const haut = Math.floor(p.y - cote / 2)
+          pinceau.fillRect(
+            gauche,
+            haut,
+            Math.ceil(p.x + cote / 2) - gauche,
+            Math.ceil(p.y + cote / 2) - haut
+          )
         }
       }
     }
@@ -453,24 +579,130 @@ export default function Plan({
     }
   }, [projet, couverture, contourEnCours, selection, echelle, versEcran])
 
+  /* ── La vue : agrandir et déplacer ──────────────────────────────────────── */
+
+  /**
+   * Agrandit ou réduit **autour d'un point de la toile**, qui ne bouge pas.
+   *
+   * Agrandir autour du coin ferait fuir ce qu'on regarde hors de l'écran : on
+   * viserait un détail, on l'agrandirait, et il faudrait le rechercher. Le
+   * point sous le curseur est donc tenu fixe — on écrit qu'il désigne le même
+   * mètre avant et après, et on en déduit le décalage.
+   */
+  function agrandirAutour(facteur: number, pixelX: number, pixelY: number): void {
+    setVue((precedente) => {
+      const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, precedente.zoom * facteur))
+      // Butée atteinte : ne rien déplacer, sinon la vue dérive alors que
+      // l'agrandissement ne change plus.
+      if (zoom === precedente.zoom) return precedente
+
+      const base = echelleAjustee()
+      const avant = base * precedente.zoom
+      const apres = base * zoom
+      if (!(avant > 0) || !(apres > 0)) return precedente
+
+      // Le mètre visé par le curseur, qui doit rester sous le curseur.
+      const mondeX = precedente.x + pixelX / avant
+      const mondeY = precedente.y + pixelY / avant
+      return { zoom, x: mondeX - pixelX / apres, y: mondeY - pixelY / apres }
+    })
+  }
+
+  /** Déplace la vue d'un nombre de pixels d'écran. */
+  function deplacerVue(pixelsX: number, pixelsY: number): void {
+    setVue((precedente) => {
+      const e = echelleAjustee() * precedente.zoom
+      if (!(e > 0)) return precedente
+      return { ...precedente, x: precedente.x + pixelsX / e, y: precedente.y + pixelsY / e }
+    })
+  }
+
+  /**
+   * La molette, posée **à la main et non passive**, et c'est tout l'enjeu.
+   *
+   * `Ctrl` + molette est aussi le raccourci d'agrandissement d'Electron : sans
+   * `preventDefault()`, **toute l'interface grossit** — menus, panneaux et
+   * texte compris — pendant que la carte, elle, ne bouge pas. React pose ses
+   * écouteurs de molette en mode passif, où `preventDefault()` est ignoré sans
+   * rien dire : `onWheel` ne peut donc pas faire ce travail, et le seul moyen
+   * est `addEventListener` avec `{ passive: false }`.
+   *
+   * Vérifié en lançant l'application, pas en relisant : c'est exactement le
+   * genre de défaut qu'aucune suite ne voit.
+   */
+  useEffect(() => {
+    const canvas = toile.current
+    if (!canvas) return
+
+    function aLaMolette(evenement: WheelEvent): void {
+      evenement.preventDefault()
+
+      if (evenement.ctrlKey) {
+        const pixels = pixelsDeLaToile(evenement.clientX, evenement.clientY)
+        if (!pixels) return
+        // Vers le haut (deltaY négatif) on se rapproche.
+        agrandirAutour(evenement.deltaY < 0 ? PAS_DE_ZOOM : 1 / PAS_DE_ZOOM, pixels.x, pixels.y)
+        return
+      }
+
+      // Sans Ctrl, la molette déplace : verticalement, ou horizontalement avec
+      // Maj. On déplace la vue dans le sens inverse du geste, comme partout.
+      if (evenement.shiftKey) deplacerVue(evenement.deltaY, 0)
+      else deplacerVue(evenement.deltaX, evenement.deltaY)
+    }
+
+    canvas.addEventListener('wheel', aLaMolette, { passive: false })
+    return () => canvas.removeEventListener('wheel', aLaMolette)
+    // `echelleAjustee` change avec les dimensions de la salle : sans elle en
+    // dépendance, l'écouteur garderait l'ancienne et déplacerait de travers.
+  }, [echelleAjustee])
+
   /* ── Interactions ───────────────────────────────────────────────────────── */
 
+  /**
+   * Les pixels de la toile sous un point de l'écran.
+   *
+   * La toile a une taille propre (900 px) et une taille affichée que le CSS
+   * décide : sans ce facteur, tout se décale dès que la fenêtre n'a pas la
+   * bonne largeur. Séparé de `positionSouris` parce que la molette arrive par
+   * un évènement natif, qui n'est pas un `React.MouseEvent`.
+   */
+  function pixelsDeLaToile(clientX: number, clientY: number): { x: number; y: number } | null {
+    const canvas = toile.current
+    if (!canvas) return null
+    const cadre = canvas.getBoundingClientRect()
+    if (cadre.width === 0) return null
+    const facteur = canvas.width / cadre.width
+    return { x: (clientX - cadre.left) * facteur, y: (clientY - cadre.top) * facteur }
+  }
+
   function positionSouris(evenement: React.MouseEvent<HTMLCanvasElement>): Point2D {
-    const cadre = evenement.currentTarget.getBoundingClientRect()
-    const facteur = evenement.currentTarget.width / cadre.width
-    return versMetres(
-      (evenement.clientX - cadre.left) * facteur,
-      (evenement.clientY - cadre.top) * facteur
-    )
+    const pixels = pixelsDeLaToile(evenement.clientX, evenement.clientY)
+    if (!pixels) return { x: 0, y: 0 }
+    return versMetres(pixels.x, pixels.y)
+  }
+
+  /**
+   * La tolérance d'attrapage, en mètres, à agrandissement donné.
+   *
+   * **Elle ne peut pas rester fixe à 0,6 m.** Agrandi douze fois, un demi-mètre
+   * couvre la moitié de la toile : on attraperait une enceinte sans jamais
+   * pouvoir cliquer à côté d'elle. Réduit, l'inverse : la cible deviendrait
+   * plus petite qu'un pixel. Ce qu'on veut est une tolérance constante **à
+   * l'écran** — une dizaine de pixels, quel que soit l'agrandissement.
+   */
+  function toleranceAttrapage(): number {
+    const e = echelle()
+    return e > 0 ? 12 / e : 0.6
   }
 
   function enceinteSous(point: Point2D): { id: string; quoi: 'position' | 'visee' } | null {
-    // 0,6 m de tolérance : assez pour attraper le point sans le chercher.
+    const tolerance = toleranceAttrapage()
     for (const enceinte of projet.enceintes) {
-      if (Math.hypot(enceinte.visee.x - point.x, enceinte.visee.y - point.y) < 0.6) {
+      if (Math.hypot(enceinte.visee.x - point.x, enceinte.visee.y - point.y) < tolerance) {
         return { id: enceinte.id, quoi: 'visee' }
       }
-      if (Math.hypot(enceinte.position.x - point.x, enceinte.position.y - point.y) < 0.6) {
+      if (Math.hypot(enceinte.position.x - point.x, enceinte.position.y - point.y) < tolerance) {
         return { id: enceinte.id, quoi: 'position' }
       }
     }
@@ -515,6 +747,15 @@ export default function Plan({
   }
 
   function auPresse(evenement: React.MouseEvent<HTMLCanvasElement>): void {
+    // **Le bouton du milieu déplace la vue, quel que soit l'outil.** Il ne sert
+    // à rien d'autre ici, et c'est le geste des logiciels de plan : on n'a pas
+    // à quitter l'outil en cours pour se déplacer, ce qui obligerait à le
+    // reprendre ensuite et ferait perdre un contour en cours de tracé.
+    if (evenement.button === 1) {
+      evenement.preventDefault()
+      glisseVue.current = { x: evenement.clientX, y: evenement.clientY }
+      return
+    }
     if (outil !== 'main') return
     const attrapee = enceinteSous(positionSouris(evenement))
     if (attrapee) setGlisse(attrapee)
@@ -553,6 +794,19 @@ export default function Plan({
   }
 
   function auDeplacement(evenement: React.MouseEvent<HTMLCanvasElement>): void {
+    // Le déplacement de vue passe avant tout le reste : pendant qu'on tire le
+    // plan, on ne pose ni ne déplace quoi que ce soit.
+    if (glisseVue.current) {
+      const cadre = evenement.currentTarget.getBoundingClientRect()
+      const facteur = cadre.width > 0 ? evenement.currentTarget.width / cadre.width : 1
+      deplacerVue(
+        (glisseVue.current.x - evenement.clientX) * facteur,
+        (glisseVue.current.y - evenement.clientY) * facteur
+      )
+      glisseVue.current = { x: evenement.clientX, y: evenement.clientY }
+      return
+    }
+
     lireSousLeCurseur(positionSouris(evenement))
     if (!glisse) return
     const point = positionSouris(evenement)
@@ -749,7 +1003,7 @@ export default function Plan({
         pentePourcent: z.pentePourcent,
         directionPenteDegres: z.directionPenteDegres
       }))
-      return profilCoupe(zones, enceintesCalcul, xCoupe, projet.bande, 0.4, analyse?.reverbere)
+      return profilCoupe(zones, enceintesCalcul, xCoupe, projet.bande, PAS_CARTE, analyse?.reverbere)
     } catch {
       // La coupe est un confort : si elle ne peut pas être tracée, on ne
       // dérange pas l'utilisateur avec une erreur — la carte, elle, l'aurait
@@ -861,6 +1115,17 @@ export default function Plan({
 
   const enceinteSelectionnee = projet.enceintes.find((e) => e.id === selection) ?? null
 
+  // La toile garde la proportion de la salle — c'est ce qui fait qu'à
+  // l'ajustement, elle la remplit exactement dans les deux sens — mais tient
+  // désormais dans une boîte bornée. On fait entrer la salle dans cette boîte,
+  // au lieu de fixer une largeur et de subir la hauteur qui en découle.
+  const echelleToile = Math.min(
+    LARGEUR_TOILE / projet.largeur,
+    HAUTEUR_TOILE_MAX / projet.profondeur
+  )
+  const largeurToile = Math.round(projet.largeur * echelleToile)
+  const hauteurToile = Math.round(projet.profondeur * echelleToile)
+
   return (
     <div className="plan">
       <div className="barre-outils">
@@ -912,6 +1177,39 @@ export default function Plan({
           ))}
         </select>
 
+        {/*
+          La vue, avec son agrandissement affiché et de quoi revenir.
+          **Le bouton de retour n'est pas un ornement** : une vue perdue est le
+          moyen le plus court de croire un projet vide. On peut sortir la salle
+          de l'écran en trois coups de molette, et rien à l'écran ne le dirait.
+        */}
+        <span className="vue-reglages">
+          <button
+            className="discret"
+            onClick={() => agrandirAutour(1 / PAS_DE_ZOOM, largeurToile / 2, hauteurToile / 2)}
+            disabled={vue.zoom <= ZOOM_MIN}
+            title={t('vue.reduireAide')}
+          >
+            −
+          </button>
+          <span className="discret vue-facteur">{t('vue.facteur', { zoom: vue.zoom.toFixed(1) })}</span>
+          <button
+            className="discret"
+            onClick={() => agrandirAutour(PAS_DE_ZOOM, largeurToile / 2, hauteurToile / 2)}
+            disabled={vue.zoom >= ZOOM_MAX}
+            title={t('vue.agrandirAide')}
+          >
+            +
+          </button>
+          <button
+            className="discret"
+            onClick={() => setVue(VUE_AJUSTEE)}
+            disabled={vue.zoom === 1 && vue.x === 0 && vue.y === 0}
+          >
+            {t('vue.ajuster')}
+          </button>
+        </span>
+
         {outil === 'zone' && (
           <>
             <button onClick={terminerZone}>
@@ -962,17 +1260,30 @@ export default function Plan({
 
       {erreur && <p className="erreur">{erreur}</p>}
 
+      {/*
+        Les gestes sont écrits, pas devinés. Un mécanisme qu'on ne découvre
+        qu'en essayant au hasard n'existe qu'à moitié — c'est la même leçon que
+        la fonction posée dans le code et qu'aucun bouton n'appelait.
+      */}
+      <p className="discret plan-aide">{t('vue.aide')}</p>
+
       <div className="plan-corps">
         <canvas
           ref={toile}
-          width={900}
-          height={Math.round((900 * projet.profondeur) / projet.largeur)}
+          width={largeurToile}
+          height={hauteurToile}
           onClick={auClic}
           onMouseDown={auPresse}
           onMouseMove={auDeplacement}
-          onMouseUp={() => setGlisse(null)}
+          onMouseUp={() => {
+            setGlisse(null)
+            glisseVue.current = null
+          }}
           onMouseLeave={() => {
             setGlisse(null)
+            // Relâcher le déplacement en sortant : sans cela, revenir sur la
+            // toile ferait bondir la vue de toute la distance parcourue dehors.
+            glisseVue.current = null
             setSousCurseur(null)
           }}
           style={{ cursor: outil === 'main' ? 'grab' : 'crosshair' }}
@@ -1080,7 +1391,7 @@ export default function Plan({
               <p className="discret">
                 {t('retard.explication', { marge: MARGE_LOCALISATION_MS })}
               </p>
-              <button className="action-ecriture" onClick={alignerLesRappels}>
+              <button onClick={alignerLesRappels}>
                 {t('retard.calculer')}
               </button>
 
@@ -1142,7 +1453,7 @@ export default function Plan({
                         ))}
                       </ul>
 
-                      <button className="action-ecriture" onClick={appliquerLeConseil}>
+                      <button onClick={appliquerLeConseil}>
                         {t('conseil.appliquer')}
                       </button>
                     </>

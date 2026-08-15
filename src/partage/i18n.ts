@@ -39,6 +39,22 @@ const TEXTES = {
   'action.modifier': { fr: 'Modifier', en: 'Edit' },
   'action.enregistrer': { fr: 'Enregistrer', en: 'Save' },
 
+  // --- La vue : agrandissement et déplacement ---
+  'vue.facteur': { fr: '×{zoom}', en: '×{zoom}' },
+  'vue.ajuster': { fr: 'Ajuster', en: 'Fit' },
+  'vue.agrandirAide': {
+    fr: 'Agrandir — Ctrl + molette sur le plan',
+    en: 'Zoom in — Ctrl + wheel over the plan'
+  },
+  'vue.reduireAide': {
+    fr: 'Réduire — Ctrl + molette sur le plan',
+    en: 'Zoom out — Ctrl + wheel over the plan'
+  },
+  'vue.aide': {
+    fr: 'Ctrl + molette agrandit · molette déplace · bouton du milieu tire le plan',
+    en: 'Ctrl + wheel zooms · wheel pans · middle button drags the plan'
+  },
+
   // --- Plan ---
   'plan.deplacer': { fr: 'Déplacer', en: 'Move' },
   'plan.dessinerZone': { fr: 'Dessiner une zone', en: 'Draw a zone' },

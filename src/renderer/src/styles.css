@@ -54,11 +54,11 @@ body {
   font-size: 0.78rem;
 }
 
-.pastille {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--clair), var(--profond));
+/*
+  La marque ne se laisse pas écraser quand le nom du fichier est long : sans
+  `flex: none`, le SVG rétrécit au lieu du texte, et le logo devient un ovale.
+*/
+.marque svg {
   flex: none;
 }
 
@@ -132,6 +132,46 @@ button.discret,
 
 .barre-outils button.actif {
   outline: 2px solid var(--ambre);
+}
+
+/*
+  Dans un formulaire, un champ prend toute la largeur — c'est la bonne règle et
+  elle reste. Dans la barre d'outils, elle donnait une ligne entière à chaque
+  liste déroulante : le choix d'enceinte et celui de la bande occupaient deux
+  rangées à eux seuls, et repoussaient le plan d'autant. Ici, chaque liste ne
+  prend que ce qu'il lui faut.
+*/
+.barre-outils select {
+  width: auto;
+  min-width: 9rem;
+}
+
+/*
+  Les réglages de vue : les deux boutons d'agrandissement, le facteur, et le
+  retour au cadrage d'ajustement. Groupés pour qu'ils ne se dispersent pas
+  parmi les outils quand la barre passe à la ligne.
+*/
+.vue-reglages {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+/*
+  Une largeur fixe pour le facteur : sans elle, passer de ×1.0 à ×10.0 élargit
+  le texte et déplace les boutons sous le curseur au moment précis où l'on
+  clique dessus plusieurs fois de suite.
+*/
+.vue-facteur {
+  min-width: 3.2rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-aide {
+  margin: -0.4rem 0 0.7rem;
+  font-size: 0.85rem;
 }
 
 /* La saisie des cotes d'une forme préfaite, sous la barre d'outils. */
@@ -249,6 +289,27 @@ canvas {
   display: block;
 }
 
+/*
+  La toile du plan s'affiche à sa taille propre, jamais étirée.
+
+  **Borner ses pixels ne servait à rien tant que le CSS l'étirait.** La règle
+  `width: 100%` ci-dessus la ramenait à la largeur de la colonne : une salle de
+  20 × 30 m tenait en 413 × 620 pixels et s'affichait sur 1220 × 1831 — plus
+  grande qu'avant le plafond, et floue par-dessus le marché, puisqu'on
+  agrandissait une image de 413 pixels de large.
+
+  À sa taille propre, chaque pixel de la carte vaut un pixel de l'écran, le plan
+  entier tient dans la fenêtre à côté de ses chiffres, et **ce qu'on perd en
+  taille se retrouve au Ctrl+molette**. C'est cette possibilité-là qui rend le
+  choix tenable ; sans elle, ce serait une régression.
+*/
+.plan-corps > canvas {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
 /* ── Le panneau latéral ───────────────────────────────────────────────────
    **Il descendait indéfiniment**, et c'est un défaut plus grave qu'il n'en a
    l'air : le réglage de pente et le bouton « Supprimer » de chaque zone vivent
@@ -277,6 +338,75 @@ canvas {
 
 .panneau h2:first-child {
   margin-top: 0;
+}
+
+/*
+  Le panneau reste sous les yeux pendant qu'on travaille sur le plan.
+
+  **C'est le geste du métier** : on déplace une enceinte et on regarde l'écart.
+  Sans `sticky`, descendre dans le plan faisait disparaître les chiffres, et il
+  fallait remonter pour lire le résultat de ce qu'on venait de faire — donc
+  cesser de voir ce qu'on avait fait.
+*/
+@media (min-width: 60rem) {
+  .panneau {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+/*
+  Les trois panneaux de résultat — retards, conseil, analyse de salle.
+
+  **Ils n'avaient aucune règle**, et ce sont les trois écrans qui portent le
+  plus de valeur de l'application : ce qu'il faut retarder, où poser les
+  enceintes, et ce que la salle fait au son. Ils coulaient les uns dans les
+  autres, sans rien pour dire où l'un finit et où le suivant commence.
+  Trouvé par le contrôle d'atteignabilité, pas à l'œil.
+*/
+.retards,
+.conseil,
+.analyse-salle {
+  margin: 0.6rem 0 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--trait);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.retards ul,
+.conseil ul,
+.analyse-salle ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.retards li,
+.conseil li,
+.analyse-salle li {
+  margin-bottom: 0.25rem;
+}
+
+/* Les nombres d'un tableau se comparent en colonne : chiffres à chasse fixe. */
+.retards,
+.analyse-salle {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+  Le conseil est une proposition, pas un verdict : il porte la couleur d'accent
+  de la maison sur son bord, pour se distinguer d'une mesure.
+*/
+.conseil {
+  border-left: 3px solid var(--ambre);
+}
+
+/*
+  L'écran du plan. La classe existait sur le conteneur sans aucune règle —
+  elle sert maintenant à borner la largeur de lecture des explications.
+*/
+.plan > p.discret {
+  max-width: 70ch;
 }
 
 .chiffre-large strong {
