@@ -539,6 +539,42 @@ Acustika conseille un placement faux avec une explication parfaitement
 articulée. `commun/polaire.js` **reconnaît et refuse** un binaire, avec un
 message qui dit quoi faire.
 
+#### Ce qui a été tenté le 15 août 2026, et qui a échoué
+
+`scripts/analyser-clf.mjs` relève, de façon reproductible, ce que les deux
+fichiers réels laissent voir : en-tête, octet de format, version, marqueur,
+métadonnées, et les plages de flottants qui se comportent comme des décibels.
+**Il ne produit aucune donnée d'enceinte** : c'est un instrument de mesure, pas
+un lecteur.
+
+**Une hypothèse séduisante a été formée puis réfutée, et c'est le résultat le
+plus utile de la tentative.** L'arithmétique tombait juste : CF2 offrait de quoi
+loger 30 bandes de 72 × 37 au pas de 5°, CF1 une dizaine de bandes de 36 × 19 au
+pas de 10°. Exactement le genre de coïncidence qui donne envie d'écrire le
+lecteur.
+
+Elle est fausse, pour deux raisons que seule l'épreuve montre :
+
+· **un ballon a une propriété que l'arithmétique ignore** — aux deux pôles, tous
+  les azimuts décrivent le même point, donc leurs valeurs doivent être
+  identiques. Le test donne des écarts de **40 dB** là où il faudrait zéro ;
+· **le grand bloc de CF2 est entièrement composé de zéros.** La factorisation
+  comptait du remplissage. Un long remplissage passe tous les critères — ce sont
+  des flottants finis, dans la plage des décibels — et se factorise
+  magnifiquement. Le script affiche désormais la **part de zéros** de chaque
+  plage, et signale au-delà de 50 % qu'il s'agit de place réservée.
+
+**Sans ce contrôle, le lecteur aurait été écrit** — et il aurait rendu des
+directivités fausses avec l'aplomb des vraies. C'est précisément le scénario que
+le refus de `commun/polaire.js` existe pour éviter, et il tient : passé le vrai
+`cls-3300.CF1`, il répond « Ce fichier est binaire… Exportez les données
+polaires en texte depuis votre visualiseur, ou saisissez-les à la main. »
+
+Ce qui manque reste ce qui manquait : **l'ordre**. Quelle bande vient en
+premier, l'azimut avant l'élévation ou l'inverse, et où se trouve le zéro
+angulaire. Trois inconnues qu'aucune arithmétique ne tranche, et dont chacune
+produit une carte crédible et fausse.
+
 **Deux pistes, par ordre de sûreté :**
 
 1. **Les fichiers `.CIF`** — CLF Authoring travaille à partir d'eux et les
