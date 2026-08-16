@@ -1,5 +1,6 @@
 import { app, dialog, ipcMain } from 'electron'
 import { lireDonneesPolaires } from '../../../commun/polaire.js'
+import { ouverturesParBande, frequencesSupposees, typeDeFichier } from '../../../commun/clf.js'
 import { readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import {
@@ -45,12 +46,17 @@ export function enregistrerHandlers(): void {
 
   // L'import de données polaires : on lit le fichier ici, parce qu'ouvrir un
   // sélecteur n'a de sens que sur un poste. Le calcul, lui, vit dans
-  // `commun/polaire.js`, avec ses vérifications.
+  // `commun/polaire.js` et `commun/clf.js`, avec leurs vérifications.
+  //
+  // **Le CLF binaire est lu depuis le 16 août 2026.** Le tri se fait sur le
+  // premier octet — 0x40 pour CF1, 0x41 pour CF2 — et non sur l'extension :
+  // un fichier renommé passerait sinon dans la mauvaise branche et rendrait
+  // des nombres au hasard.
   ipcMain.handle('bibliotheque:importerPolaire', async () => {
     const resultat = await dialog.showOpenDialog({
       title: 'Importer des données polaires',
       filters: [
-        { name: 'Données polaires', extensions: ['csv', 'txt', 'tsv', 'dat'] },
+        { name: 'Données polaires', extensions: ['csv', 'txt', 'tsv', 'dat', 'cf1', 'cf2'] },
         { name: 'Tous les fichiers', extensions: ['*'] }
       ],
       properties: ['openFile']
@@ -58,12 +64,47 @@ export function enregistrerHandlers(): void {
     if (resultat.canceled || resultat.filePaths.length === 0) return null
 
     const chemin = resultat.filePaths[0]
-    const lecture = lireDonneesPolaires(readFileSync(chemin, 'utf-8'))
-    return {
-      nom: basename(chemin).replace(/\.[^.]+$/, ''),
-      ouverture: lecture.ouverture,
-      avertissements: lecture.avertissements
+    const nom = basename(chemin).replace(/\.[^.]+$/, '')
+    const brut = readFileSync(chemin)
+
+    if (typeDeFichier(new Uint8Array(brut))) {
+      const lu = ouverturesParBande(new Uint8Array(brut))
+      const frequences = frequencesSupposees(lu.nombreBandes)
+
+      const ouverture: Record<number, number> = {}
+      frequences.forEach((f, i) => {
+        ouverture[f] = Math.round(lu.horizontales[i])
+      })
+
+      // **Deux réserves, et aucune ne doit être noyée dans le succès.** Le
+      // processus principal ne sait pas quelle langue la fenêtre affiche : ce
+      // sont donc des clés, et la clé voyage avec ses valeurs en JSON.
+      const avertissements = [
+        // 1. Les fréquences ne sont pas dans le fichier. Les afficher sans le
+        //    dire ferait passer une supposition pour une lecture.
+        JSON.stringify({
+          cle: 'clfBandesSupposees',
+          premiere: frequences[0],
+          derniere: frequences[frequences.length - 1]
+        })
+      ]
+
+      // 2. Acustika ne modélise qu'une ouverture par bande, par un cône. Ce
+      //    fichier en donne deux, et pour une colonne elles n'ont rien à voir —
+      //    92° en horizontal contre 21° en vertical à 4 kHz sur la CLS-3300.
+      //    Retenir l'horizontale sans le dire surestimerait la couverture
+      //    verticale du tout au tout.
+      const ecarts = lu.horizontales.map((h, i) => Math.abs(h - lu.verticales[i]))
+      const ecartMax = Math.round(Math.max(...ecarts))
+      if (ecartMax >= 20) {
+        avertissements.push(JSON.stringify({ cle: 'clfHorizontaleRetenue', ecart: ecartMax }))
+      }
+
+      return { nom, ouverture, avertissements }
     }
+
+    const lecture = lireDonneesPolaires(brut.toString('utf-8'))
+    return { nom, ouverture: lecture.ouverture, avertissements: lecture.avertissements }
   })
 
   ipcMain.handle('projet:nouveau', () => projetVide())

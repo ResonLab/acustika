@@ -97,7 +97,13 @@ export default function Bibliotheque({
           bandes: Object.keys(lecture.ouverture).length
         })
       )
-      if (lecture.avertissements.length > 0) setErreur(lecture.avertissements.join(' · '))
+      // **Les avertissements du processus principal sont des clés** — il ne
+      // sait pas quelle langue la fenêtre affiche. Ceux du module partagé sont
+      // des phrases françaises, et `traduireErreur` rend le texte brut quand
+      // aucune clé ne correspond : les deux passent donc par le même chemin.
+      if (lecture.avertissements.length > 0) {
+        setErreur(lecture.avertissements.map(traduireErreur).join(' · '))
+      }
     } catch (e) {
       setErreur(traduireErreur((e as Error).message))
     }

@@ -215,8 +215,16 @@ const TEXTES = {
     en: 'A text table: angles in columns and bands in rows, or the other way round — both are recognised. The coverage angle at −6 dB is derived by interpolating between your readings.'
   },
   'biblio.clfNonLu': {
-    fr: 'Les fichiers CLF (.cf1, .cf2) ne sont pas lus : leur structure n’est pas publique, et un lecteur qui devinerait produirait des directivités fausses — donc des placements faux avec l’aplomb des vrais. Exportez les données polaires en texte depuis votre visualiseur.',
-    en: 'CLF files (.cf1, .cf2) are not read: their structure is not public, and a reader that guessed would produce wrong directivity — hence wrong placements with the confidence of right ones. Export the polar data as text from your viewer.'
+    fr: 'Les fichiers CLF (.cf1, .cf2) sont lus, depuis leur ballon de directivité. Deux réserves s’affichent alors, et il faut les lire : le fichier ne dit pas à quelle fréquence commencent ses bandes, et Acustika ne retient qu’une ouverture par bande là où le fichier en donne deux.',
+    en: 'CLF files (.cf1, .cf2) are read, from their directivity balloon. Two reservations are then shown, and they must be read: the file does not say which frequency its bands start at, and Acustika keeps only one coverage angle per band where the file gives two.'
+  },
+  'erreur.clfBandesSupposees': {
+    fr: 'Le fichier ne dit pas à quelle fréquence commencent ses bandes : elles ont été supposées de {premiere} Hz à {derniere} Hz. Vérifiez sur la fiche technique — une octave d’écart fausserait toute la directivité.',
+    en: 'The file does not say which frequency its bands start at: they were assumed to run from {premiere} Hz to {derniere} Hz. Check the datasheet — being one octave out would falsify the whole directivity.'
+  },
+  'erreur.clfHorizontaleRetenue': {
+    fr: 'Acustika ne modélise qu’une ouverture par bande : c’est l’horizontale qui est retenue. Ce fichier donne une verticale très différente, jusqu’à {ecart}° d’écart — la couverture verticale sera donc surestimée.',
+    en: 'Acustika models only one coverage angle per band: the horizontal one is kept. This file gives a very different vertical figure, up to {ecart}° apart — vertical coverage will therefore be overestimated.'
   },
   'biblio.nom': { fr: 'Nom', en: 'Name' },
   'biblio.marque': { fr: 'Marque', en: 'Brand' },
