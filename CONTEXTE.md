@@ -685,12 +685,65 @@ s'ajuster sur la mesure qui a servi à former l'hypothèse.*
 est lisible, et à ±3 dB en comptant des pixels : trop grossier pour trancher, et
 c'est exactement ce qui a produit les faux candidats.
 
-**La suite, si on la reprend** : appliquer la mesure de période aux quatorze
-fichiers d'exemple et chercher **ce qui fait varier 19**. Une constante qui ne
-bouge jamais est une dimension du format ; une qui suit la couverture ou la
-résolution est un axe angulaire. C'est une question à laquelle la comparaison
-peut répondre, contrairement à l'ordre, que l'analyse d'un fichier seul ne
-tranchera jamais.
+#### La période mesurée sur seize fichiers : l'ordre est tranché
+
+**La mesure a été refaite sur les quatorze fichiers d'exemple plus les deux
+fichiers réels, et le résultat est net.**
+
+| Fichiers | Période |
+|---|---|
+| **Tous les CF1** — Active, Active_halfsphere, Passive1, Powered, cls-3300 | **19** |
+| **Tous les CF2** — Passive2, polarballoon, les six `clf2_v2_*`, les deux Speaker Maker | **37** |
+| `Coax8.CF2` | **74**, soit 2 × 37 |
+
+**La période suit le format, et rien d'autre.** Elle ne bouge ni avec la
+couverture, ni avec l'enceinte, ni avec la taille du fichier : neuf CF2 très
+différents donnent tous 37, cinq CF1 donnent tous 19. Dans chaque cas les cinq
+premiers multiples sortent aussi en tête du classement — ce n'est pas un pic de
+bruit.
+
+Et les deux nombres se lisent :
+
+```
+180° / 10° + 1 = 19      ← CF1, résolution 10°
+180° /  5° + 1 = 37      ← CF2, résolution 5°
+```
+
+**C'est un axe angulaire balayant 0° à 180° bornes comprises**, aux deux
+résolutions du format. Et puisque c'est la période du cycle *rapide*, **c'est cet
+angle qui varie le plus vite dans le fichier**.
+
+**L'ordre de parcours est donc tranché** — celui que ce document déclarait
+indéterminable. Et il l'est par une mesure qui n'a servi à ajuster aucune
+hypothèse : seize fichiers mesurés, et la coupure tombe **exactement** sur la
+frontière CF1 / CF2. C'est le contrôle indépendant qui manquait aux trois
+tentatives précédentes.
+
+*La leçon de méthode, à garder* : les trois hypothèses réfutées cherchaient à
+faire coller un découpage à des valeurs connues. Celle-ci ne cherchait rien —
+elle mesurait une quantité sur seize fichiers pour voir ce qui la fait varier.
+**Une mesure qui balaie une famille bat un ajustement sur un cas.**
+
+#### Ce qui reste ouvert, et qu'il ne faut pas masquer
+
+· **Les zéros de la demi-sphère ne s'expliquent pas.** Si 19 est un angle de 0°
+  à 180°, `Active_halfsphere.CF1` devrait avoir une moitié de ses positions
+  toujours nulles. Mesuré : 43 % à 54 % sur les dix-neuf positions. La période
+  est angulaire, mais une demi-sphère ne se code pas en mettant un hémisphère à
+  zéro. *Tant que ce point n'est pas compris, on ne sait pas lire une
+  demi-sphère.*
+· **`Coax8.CF2` donne 74 et non 37.** Deux valeurs par direction, peut-être un
+  module et une phase — le format CLF2 en porte, et les noms des exemples
+  (`real-imag`, `fir`, `nophase`) le confirment.
+· **Le zéro angulaire** : lequel des deux pôles vaut 0°, et où est le « droit
+  devant ». Rien dans ces mesures ne le dit.
+
+**La marche suivante n'est plus d'analyser, c'est de fabriquer.** CLF Authoring
+compile un fichier à partir de données qu'on choisit. Écrire un ballon
+volontairement dissymétrique — une seule direction à 0 dB, tout le reste à
+−40 —, le compiler, et chercher où atterrit cette valeur dans le binaire répond
+d'un coup au zéro angulaire et au sens de parcours. *Une entrée connue vaut mieux
+que dix fichiers donnés.*
 
 **Deux pistes, par ordre de sûreté :**
 
