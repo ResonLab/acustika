@@ -818,11 +818,79 @@ bande : telle quelle, opposée, et le niveau absolu par `sensibilité ± atténu
 Aucune ne se trouve. La transformation n'est donc pas un simple changement de
 signe ou d'origine — c'est l'expansion géométrique qu'il faut reconstruire.
 
-**Ce qui manque pour finir, et c'est précis** : la **figure 1** de
-`CLF_specs.pdf`, qui définit l'ordre des arcs et le sens des angles. Le texte
-extrait y renvoie sans la décrire (« see Fig. 1 »). Il faut donc l'**ouvrir dans
-un lecteur PDF et regarder cette figure** — c'est la dernière pièce, et elle
-tient sur une page.
+#### Le ballon est décodé — 16 août 2026
+
+**La figure 1 était la dernière pièce, et elle a suffi.** Elle définit deux
+angles, que le texte de la section 12.3 nomme :
+
+| | |
+|---|---|
+| **φ — *arc angle*** | 0° droit devant, **sur l'axe**, jusqu'à 180° à l'arrière |
+| **θ — *rotation angle*** | 0° en haut, 90° à gauche, 180° en bas, 270° à droite, **sens antihoraire vu de l'arrière** |
+
+**La disposition dans le binaire :**
+
+```
+un bloc par bande, les blocs se suivent sans séparateur
+un bloc = 36 arcs × 19 points          (CF1, pas de 10°)
+          72 arcs × 37 points          (CF2, pas de 5°)
+φ varie le plus vite : les 19 points d'un arc sont contigus
+puis θ : les arcs se succèdent, 0° = haut, sens antihoraire vu de l'arrière
+valeurs : dB relatifs à l'axe, flottants little-endian, 0.00 sur l'axe
+```
+
+Pour `cls-3300.CF1`, le ballon occupe **`0x002e58` à `0x0083d8`** : huit bandes
+de 684 valeurs, exactement les huit que le visualiseur affiche.
+
+**Comment il a été trouvé, et pourquoi ce n'est pas un ajustement de plus.** Le
+repérage vient d'une propriété physique, pas d'une coïncidence arithmétique :
+**φ = 0 est l'axe, donc le même point pour les 36 arcs** — ces valeurs doivent
+être identiques. Idem pour φ = 180. On a balayé tous les offsets possibles en
+gardant ceux où les deux pôles sont constants *et* où le bloc varie réellement.
+Six blocs sont sortis, espacés d'exactement 684 flottants. *C'est le test qui
+avait tué la première hypothèse, où l'écart aux pôles atteignait 40 dB.*
+
+Trois faits confirment la lecture sans y avoir contribué :
+
+· **l'axe vaut 0,00 dans les huit bandes**, ce que `<BALLOON-REF> <relative>`
+  exige ;
+· **l'étendue croît régulièrement avec la fréquence** — 0,8 · 2,7 · 5,1 · 19,0 ·
+  33,6 · 34,9 · 43,6 · 47,0 dB. Une enceinte devient directive dans l'aigu ;
+· **le compte de bandes tombe juste** : huit, comme à l'écran.
+
+#### Le contrôle indépendant, celui qui décide
+
+**Les largeurs à −6 dB relevées dans CLF Viewer n'ont servi à rien pour trouver
+le découpage.** Recalculées depuis le ballon décodé :
+
+| Bande | Horizontal calculé | Écran | Vertical calculé | Écran |
+|---|---|---|---|---|
+| 1 kHz | 206° | 206° | 90° | (86°) |
+| 2 kHz | 191° | 191° | 48° | (44°) |
+| 4 kHz | 92° | 92° | 23° | 21° |
+| 8 kHz | 63° | 63° | 9° | (8°) |
+| 16 kHz | 71° | 71° | 52° | (46°) |
+
+**Écart moyen : 0,2° en horizontal, 2,0° en vertical** — et l'écran donne les
+verticales entre parenthèses, marque d'une valeur interpolée.
+
+*À comparer avec la seconde hypothèse du 15 août, qui reproduisait sept largeurs
+horizontales sur huit et mourait sur les verticales, fausses de 113° en moyenne.*
+La règle écrite ce jour-là tient toujours et vient de payer : **un ajustement qui
+n'a pas été contredit par une mesure qu'il n'a pas servi à produire ne prouve
+rien.** Cette fois la mesure indépendante existait, et elle n'a pas contredit.
+
+#### Ce qui reste avant d'écrire le lecteur
+
+· **repérer le ballon sans offset écrit en dur** — le balayage par constance des
+  pôles le fait déjà, et c'est un critère physique, donc portable ;
+· **éprouver un CF2** (72 × 37) sur le même principe ;
+· **les symétries et la demi-sphère** : le texte source stocke une forme
+  comprimée, le binaire le ballon développé. Reste à vérifier que le développé
+  se lit pareil quelle que soit la symétrie déclarée ;
+· et **ne pas relâcher le refus de `commun/polaire.js`** tant que le lecteur
+  n'est pas éprouvé sur plusieurs fichiers : une carte fausse a l'aplomb d'une
+  vraie.
 
 **Deux pistes, par ordre de sûreté :**
 
