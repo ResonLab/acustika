@@ -631,6 +631,67 @@ la table : par exemple, à 4 kHz, l'atténuation à 30°, 60° et 90° horizonta
 Trois points de la courbe polaire suffiraient à trancher l'ordre et le zéro
 angulaire, là où les largeurs ne donnent qu'un seuil.
 
+#### Le 16 août 2026 : une méthode qui marche, une période mesurée, et une troisième hypothèse réfutée
+
+**Le levier était livré avec CLF Viewer, et personne n'avait regardé.**
+`C:\Program Files (x86)\CLF\sample files` contient **quatorze fichiers
+d'exemple** — dont, et c'est là tout l'intérêt, **`Active.CF1` et
+`Active_halfsphere.CF1` : la même enceinte, en pleine sphère et en demi-sphère**,
+plus un `Speaker Maker Inc_15in two-way 90x50.CF2` dont le nom annonce la
+directivité.
+
+**C'est ce qui manquait aux deux tentatives précédentes.** Elles analysaient un
+fichier seul, où tout est inconnu à la fois. Comparer deux fichiers qui ne
+diffèrent que par **une** chose isole l'effet de cette chose. *Chercher une paire
+qui ne diffère que par ce qu'on veut comprendre vaut mieux que mieux analyser un
+fichier isolé.*
+
+**Ce qui est mesuré, et qui tient** : dans le grand bloc de flottants de
+`Active_halfsphere.CF1`, le masque « valeur nulle / non nulle » a une **période
+de 19**. L'autocorrélation donne 19 en tête, puis **38, 57, 76, 95, 114, 133,
+152, 171, 190** — les neuf premiers multiples, dans l'ordre de rang, tous très
+au-dessus du bruit (0,98 contre une médiane de 0,85).
+
+C'est **la première constante de structure obtenue autrement que par la table
+électro-acoustique**, et elle est reproductible.
+
+**Ce qui a été cru puis réfuté le même jour** : que cette période soit un axe
+d'élévation de 0° à 180° par pas de 10°, la demi-sphère laissant un hémisphère à
+zéro. La prédiction est nette et elle échoue — si un hémisphère manquait, une
+dizaine de positions du cycle seraient **toujours** nulles et les autres jamais.
+Mesuré : les zéros se répartissent entre **43 % et 54 % sur les dix-neuf
+positions**, avec un seul pic à la position 5. Il n'y a pas d'hémisphère
+manquant à cet endroit.
+
+**Troisième découpage plausible, troisième réfutation** — mais cette fois par un
+contrôle écrit exprès pour le tuer, et en quelques minutes. *La leçon du 15 août
+tient et se confirme : ce qui coûte cher n'est pas de se tromper, c'est de
+s'ajuster sur la mesure qui a servi à former l'hypothèse.*
+
+**Deux fausses pistes, à ne pas rouvrir :**
+
+· les fichiers **`.CI1`** de CLF Authoring (jeu PTB, treize instruments) ne sont
+  **pas en texte** malgré ce que ce document espérait : ce sont des binaires de
+  la même famille (`v1.0a`, chaînes lisibles entre les flottants). Ils restent
+  utiles comme jeu de comparaison — treize sources aux directivités très
+  différentes — mais ils ne donnent aucune spécification ;
+· **`CLFViewer.pdf` est chiffré** — ses flux ne se décompressent pas. C'est de
+  toute façon le manuel du visualiseur, pas la spécification du format.
+
+**Et CLF Viewer ne donne aucun chiffre exploitable**, vérifié dans l'outil :
+`File` n'offre que « Open Distribution Binary » et « Exit » ; l'onglet
+**Balloon-spectra ne trace rien** — à 90° horizontal la courbe reste plate à
+0 dB, ce qui est impossible pour une source réelle. Seul le diagramme polaire
+est lisible, et à ±3 dB en comptant des pixels : trop grossier pour trancher, et
+c'est exactement ce qui a produit les faux candidats.
+
+**La suite, si on la reprend** : appliquer la mesure de période aux quatorze
+fichiers d'exemple et chercher **ce qui fait varier 19**. Une constante qui ne
+bouge jamais est une dimension du format ; une qui suit la couverture ou la
+résolution est un axe angulaire. C'est une question à laquelle la comparaison
+peut répondre, contrairement à l'ordre, que l'analyse d'un fichier seul ne
+tranchera jamais.
+
 **Deux pistes, par ordre de sûreté :**
 
 1. **Les fichiers `.CIF`** — CLF Authoring travaille à partir d'eux et les
