@@ -10,6 +10,10 @@ const SUITES = [
   ['Salle et réverbération', 'salle.mjs'],
   ['Application', 'application.mjs'],
   ['Données polaires', 'polaire.mjs'],
+  // Le lecteur du CLF binaire. Il se compare à des largeurs relevées dans CLF
+  // Viewer, qui n'ont servi à rien pour l'écrire : c'est ce qui en fait une
+  // épreuve et non un ajustement.
+  ['Lecture du CLF binaire', 'clf.mjs'],
   ['Traductions', 'traductions.mjs'],
   ['Effets React et leurs dépendances', 'effets-react.mjs'],
   ['Ce qui existe est-il atteignable', 'atteignable.mjs'],
