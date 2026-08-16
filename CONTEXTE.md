@@ -738,12 +738,54 @@ elle mesurait une quantité sur seize fichiers pour voir ce qui la fait varier.
 · **Le zéro angulaire** : lequel des deux pôles vaut 0°, et où est le « droit
   devant ». Rien dans ces mesures ne le dit.
 
-**La marche suivante n'est plus d'analyser, c'est de fabriquer.** CLF Authoring
-compile un fichier à partir de données qu'on choisit. Écrire un ballon
-volontairement dissymétrique — une seule direction à 0 dB, tout le reste à
-−40 —, le compiler, et chercher où atterrit cette valeur dans le binaire répond
-d'un coup au zéro angulaire et au sens de parcours. *Une entrée connue vaut mieux
-que dix fichiers donnés.*
+#### CLF Authoring livre les sources en texte — et il ne fallait rien fabriquer
+
+**Installé le 16 août 2026, il dépose ses outils dans le même dossier que le
+visualiseur** — d'où la confusion, on croit réinstaller CLF Viewer. Il ajoute
+`CLF.exe` (le compilateur), `CLFEdit.exe` (un simple éditeur de texte),
+`CLF.pdf` et **`CLF_specs.pdf`**.
+
+**Et surtout `sample text\` : les sources en TEXTE des fichiers d'exemple**, avec
+leurs binaires appariés dans `sample distribution\`. `clf1_active_halfsphere_point.tab`
+correspond à `Active_halfsphere.CF1`. *On a le texte et le binaire du même
+fichier* — il n'y avait rien à fabriquer, seulement à regarder au bon endroit.
+
+Ce que la source dit, en clair :
+
+```
+<RADIATION>          <Halfsphere>
+<BALLOON-SYMMETRY>   <horizontal>
+<BALLOON-ARC-ORDER>  <default>
+<BALLOON-REF>        <relative>  <SIGN> <reversed>
+<BAND> 125    puis une matrice de 19 lignes x 10 colonnes
+```
+
+**Dix-neuf lignes** — exactement la période mesurée dans le binaire. La période
+19 est donc bien la dimension d'une matrice de bande, ce qui confirme la mesure
+précédente par une source indépendante.
+
+**Et le mystère des zéros tombe : ce n'étaient pas des trous, c'étaient des
+zéros.** La bande 125 Hz est une matrice entièrement nulle parce que
+l'atténuation y est nulle — l'enceinte est omnidirectionnelle dans le grave.
+`<BALLOON-REF> <relative>` le dit : les valeurs sont des atténuations relatives
+à l'axe. *J'avais lu « valeur nulle » comme « donnée absente », et bâti une
+prédiction sur cette lecture. Elle a échoué pour une raison plus bête que
+prévu : la donnée était là, et elle valait zéro.*
+
+**Ce qui reste à comprendre, et c'est mesuré aussi** : le binaire **n'est pas
+une recopie du texte**. Cherchées dans `Active_halfsphere.CF1` en flottants
+little-endian, dans les deux signes : la matrice entière par lignes, par
+colonnes, et même une seule ligne ou une seule colonne isolée — **rien ne s'y
+trouve**, dans aucune des cinq bandes non nulles. Le compilateur transforme les
+valeurs avant de les écrire : interpolation vers la grille complète que la
+symétrie horizontale permet d'omettre, passage en niveaux absolus par la
+sensibilité, ou autre.
+
+**La marche suivante est donc de comprendre cette transformation**, et le moyen
+est là : `CLF_specs.pdf` dans le dossier d'installation. Il ne s'extrait pas par
+décompression des flux — comme `CLFViewer.pdf`, il est chiffré — mais il
+**s'ouvre normalement dans un lecteur**. C'est le document qui décrit le format,
+et personne ne l'a encore lu.
 
 **Deux pistes, par ordre de sûreté :**
 
