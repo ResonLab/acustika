@@ -1,6 +1,12 @@
 import { app, dialog, ipcMain } from 'electron'
 import { lireDonneesPolaires } from '../../../commun/polaire.js'
-import { ouverturesParBande, frequencesSupposees, typeDeFichier } from '../../../commun/clf.js'
+import {
+  ouverturesParBande,
+  frequencesSupposees,
+  repartirSurBandes,
+  typeDeFichier
+} from '../../../commun/clf.js'
+import { BANDES_OCTAVE } from '../../../commun/acoustique.js'
 import { readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import {
@@ -71,10 +77,11 @@ export function enregistrerHandlers(): void {
       const lu = ouverturesParBande(new Uint8Array(brut))
       const frequences = frequencesSupposees(lu.nombreBandes)
 
-      const ouverture: Record<number, number> = {}
-      frequences.forEach((f, i) => {
-        ouverture[f] = Math.round(lu.horizontales[i])
-      })
+      const { ouverture, ignorees } = repartirSurBandes(
+        lu.horizontales,
+        frequences,
+        BANDES_OCTAVE
+      )
 
       // **Deux réserves, et aucune ne doit être noyée dans le succès.** Le
       // processus principal ne sait pas quelle langue la fenêtre affiche : ce
@@ -98,6 +105,15 @@ export function enregistrerHandlers(): void {
       const ecartMax = Math.round(Math.max(...ecarts))
       if (ecartMax >= 20) {
         avertissements.push(JSON.stringify({ cle: 'clfHorizontaleRetenue', ecart: ecartMax }))
+      }
+
+      // 3. Acustika s'arrête à 8 kHz ; un CLF va souvent jusqu'à 16. Trouvé en
+      //    lançant l'application : l'écran annonçait huit bandes lues et n'en
+      //    affichait que sept, la dernière disparaissant sans un mot.
+      if (ignorees.length > 0) {
+        avertissements.push(
+          JSON.stringify({ cle: 'clfBandesIgnorees', bandes: ignorees.join(', ') })
+        )
       }
 
       return { nom, ouverture, avertissements }

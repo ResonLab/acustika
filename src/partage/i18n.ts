@@ -194,12 +194,15 @@ const TEXTES = {
     en: 'The loudspeakers shipped are generic templates'
   },
   'biblio.avertissementSuite': {
-    fr: ", pas des modèles du commerce. Corrigez le niveau et les ouvertures avec la fiche technique réelle : une directivité inventée donne un placement faux avec l'air d'être sûr. Le format ouvert visé est le ",
-    en: ', not products off the shelf. Correct the level and the coverage angles from the real data sheet: an invented directivity gives a wrong placement with the air of being certain. The open format aimed for is '
+    fr: ", pas des modèles du commerce. Corrigez le niveau et les ouvertures avec la fiche technique réelle : une directivité inventée donne un placement faux avec l'air d'être sûr. Le format ouvert lu est le ",
+    en: ', not products off the shelf. Correct the level and the coverage angles from the real data sheet: an invented directivity gives a wrong placement with the air of being certain. The open format read is '
   },
+  // *Ce texte disait « le format ouvert VISÉ est le CLF ; en attendant, le CSV
+  // permet la saisie ». C'était vrai jusqu'au 16 août 2026 au matin, et faux le
+  // soir même.* Trouvé en lançant l'application, pas en la relisant.
   'biblio.avertissementFin': {
-    fr: ' ; en attendant, le CSV permet la saisie.',
-    en: '; in the meantime, CSV allows manual entry.'
+    fr: ' ; le CSV et les tableaux texte restent acceptés.',
+    en: '; CSV and text tables are still accepted.'
   },
   'biblio.importerPolaire': {
     fr: 'Importer des données polaires…',
@@ -221,6 +224,10 @@ const TEXTES = {
   'erreur.clfBandesSupposees': {
     fr: 'Le fichier ne dit pas à quelle fréquence commencent ses bandes : elles ont été supposées de {premiere} Hz à {derniere} Hz. Vérifiez sur la fiche technique — une octave d’écart fausserait toute la directivité.',
     en: 'The file does not say which frequency its bands start at: they were assumed to run from {premiere} Hz to {derniere} Hz. Check the datasheet — being one octave out would falsify the whole directivity.'
+  },
+  'erreur.clfBandesIgnorees': {
+    fr: 'Acustika s’arrête à 8 kHz : la ou les bandes {bandes} Hz du fichier ne sont pas reprises.',
+    en: 'Acustika stops at 8 kHz: the {bandes} Hz band(s) from the file are not carried over.'
   },
   'erreur.clfHorizontaleRetenue': {
     fr: 'Acustika ne modélise qu’une ouverture par bande : c’est l’horizontale qui est retenue. Ce fichier donne une verticale très différente, jusqu’à {ecart}° d’écart — la couverture verticale sera donc surestimée.',

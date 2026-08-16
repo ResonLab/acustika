@@ -273,6 +273,35 @@ export function ouverturesParBande(octets) {
 }
 
 /**
+ * Range les ouvertures lues sur les bandes que le modèle sait traiter.
+ *
+ * **Acustika travaille sur sept bandes d'octave, de 125 Hz à 8 kHz** — c'est
+ * `BANDES_OCTAVE` d'`acoustique.js`, et les tables d'absorption des matériaux
+ * sont écrites pour celles-là. Un fichier CLF en porte souvent huit, jusqu'à
+ * 16 kHz.
+ *
+ * **La bande en trop est écartée, et cette fonction la nomme.** Trouvé en
+ * lançant l'application : l'écran annonçait « 8 bande(s) lues » et n'affichait
+ * que sept colonnes — la huitième disparaissait sans un mot. *Une donnée jetée
+ * en silence est pire qu'une donnée refusée : on croit l'avoir importée.*
+ *
+ * @param {number[]} ouvertures Une valeur par bande du fichier, dans l'ordre.
+ * @param {number[]} frequences Les fréquences supposées, même ordre.
+ * @param {number[]} bandesModele Les bandes que le modèle traite.
+ * @returns {{ ouverture: Record<number, number>, ignorees: number[] }}
+ */
+export function repartirSurBandes(ouvertures, frequences, bandesModele) {
+  /** @type {Record<number, number>} */
+  const ouverture = {}
+  const ignorees = []
+  frequences.forEach((f, i) => {
+    if (bandesModele.includes(f)) ouverture[f] = Math.round(ouvertures[i])
+    else ignorees.push(f)
+  })
+  return { ouverture, ignorees }
+}
+
+/**
  * Les fréquences que porteraient ces bandes **si** la série commence à 125 Hz.
  *
  * **Le nom porte le doute, et il doit le garder.** Les fréquences ne sont pas

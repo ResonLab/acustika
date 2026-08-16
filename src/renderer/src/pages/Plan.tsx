@@ -459,20 +459,38 @@ export default function Plan({
     // **Elle passe par `versEcran` comme tout le reste** : multiplier par
     // l'échelle sans retirer le décalage la laisserait collée à la toile
     // pendant que la salle glisse dessous.
+    // **Elle couvre la toile, pas la salle**, et c'est un correctif du
+    // 16 août 2026, signalé par l'utilisateur. Elle allait de 0 à
+    // `projet.largeur` : tant que la salle remplissait la toile, personne ne
+    // pouvait le voir. Depuis qu'on dézoome, la salle occupe un coin et la
+    // grille s'arrêtait à son bord, laissant le reste nu — comme si le plan
+    // n'existait plus au-delà. *Le zoom n'a pas créé le défaut, il l'a rendu
+    // visible ; c'est le contour de la salle qui dit où elle s'arrête, pas la
+    // grille.*
     if (e >= GRILLE_LISIBLE_PX) {
       pinceau.strokeStyle = 'rgba(255,255,255,0.06)'
       pinceau.lineWidth = 1
-      for (let m = 0; m <= projet.largeur; m += 1) {
-        const haut = versEcran({ x: m, y: 0 })
-        const bas = versEcran({ x: m, y: projet.profondeur })
+
+      // Les bornes visibles, en mètres, déduites des coins de la toile par le
+      // chemin retour. On les prend dans les deux sens : rien ne garantit que
+      // le coin haut-gauche de l'écran soit le minimum en mètres.
+      const coins = [versMetres(0, 0), versMetres(canvas.width, canvas.height)]
+      const xMin = Math.floor(Math.min(coins[0].x, coins[1].x))
+      const xMax = Math.ceil(Math.max(coins[0].x, coins[1].x))
+      const yMin = Math.floor(Math.min(coins[0].y, coins[1].y))
+      const yMax = Math.ceil(Math.max(coins[0].y, coins[1].y))
+
+      for (let m = xMin; m <= xMax; m += 1) {
+        const haut = versEcran({ x: m, y: yMin })
+        const bas = versEcran({ x: m, y: yMax })
         pinceau.beginPath()
         pinceau.moveTo(haut.x, haut.y)
         pinceau.lineTo(bas.x, bas.y)
         pinceau.stroke()
       }
-      for (let m = 0; m <= projet.profondeur; m += 1) {
-        const gauche = versEcran({ x: 0, y: m })
-        const droite = versEcran({ x: projet.largeur, y: m })
+      for (let m = yMin; m <= yMax; m += 1) {
+        const gauche = versEcran({ x: xMin, y: m })
+        const droite = versEcran({ x: xMax, y: m })
         pinceau.beginPath()
         pinceau.moveTo(gauche.x, gauche.y)
         pinceau.lineTo(droite.x, droite.y)

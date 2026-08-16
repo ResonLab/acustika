@@ -21,7 +21,8 @@ import {
   ouverture,
   ouverturesParBande,
   angleAuSeuil,
-  frequencesSupposees
+  frequencesSupposees,
+  repartirSurBandes
 } from '../commun/clf.js'
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -172,6 +173,30 @@ verifier(
 verifier(
   'les fréquences supposées suivent la série d’octaves depuis 125 Hz',
   frequencesSupposees(8).join(',') === '125,250,500,1000,2000,4000,8000,16000'
+)
+
+// **Le défaut trouvé en lançant l'application, et que rien ici ne voyait.**
+// L'écran annonçait « 8 bande(s) lues » et n'affichait que sept colonnes : la
+// bande 16 kHz disparaissait sans un mot, parce que le modèle d'Acustika
+// s'arrête à 8 kHz. Une donnée jetée en silence est pire qu'une donnée refusée.
+const BANDES_DU_MODELE = [125, 250, 500, 1000, 2000, 4000, 8000]
+const reparti = repartirSurBandes(
+  mesure.horizontales,
+  frequencesSupposees(mesure.nombreBandes),
+  BANDES_DU_MODELE
+)
+verifier(
+  'la bande que le modèle ne traite pas est nommée, pas jetée en silence',
+  reparti.ignorees.join(',') === '16000',
+  `ignorées : ${reparti.ignorees.join(', ') || 'aucune'}`
+)
+verifier(
+  'les sept bandes du modèle sont bien remplies',
+  Object.keys(reparti.ouverture).length === 7 && reparti.ouverture[8000] === 63
+)
+verifier(
+  "un fichier qui tient dans le modèle n'a rien à signaler",
+  repartirSurBandes([90, 80], [125, 250], BANDES_DU_MODELE).ignorees.length === 0
 )
 
 console.log(
