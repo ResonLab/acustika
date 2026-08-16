@@ -781,11 +781,48 @@ valeurs avant de les écrire : interpolation vers la grille complète que la
 symétrie horizontale permet d'omettre, passage en niveaux absolus par la
 sensibilité, ou autre.
 
-**La marche suivante est donc de comprendre cette transformation**, et le moyen
-est là : `CLF_specs.pdf` dans le dossier d'installation. Il ne s'extrait pas par
-décompression des flux — comme `CLFViewer.pdf`, il est chiffré — mais il
-**s'ouvre normalement dans un lecteur**. C'est le document qui décrit le format,
-et personne ne l'a encore lu.
+#### La spécification, enfin lue — 16 août 2026
+
+**`CLF_specs.pdf` s'extrait avec `pdftotext -layout`**, livré avec Git pour
+Windows (`C:\Program Files\Git\mingw64\bin`). *Ma décompression des flux à la
+main échouait et j'en avais conclu « chiffré » ; c'était ma méthode qui était
+insuffisante.* 42 000 caractères de format documenté.
+
+Ce qu'elle donne, et qui n'était pas devinable :
+
+| `<BALLOON-SYMMETRY>` | Ce qui est stocké |
+|---|---|
+| `<full>` | Q1 seul — **10 arcs**, 0°..90° |
+| `<vertical>` | Q1 et Q4 — **19 arcs**, 270°..350° puis 0°..90° |
+| `<horizontal>` | Q1 et Q2 — **19 arcs**, 0°..180° |
+| `<none>` | les quatre quadrants — **36 arcs**, 0°..350° |
+| `<rotational>` | un seul arc |
+| `<polar>` | quatre arcs à 0°, 90°, 180°, 270°, le reste interpolé |
+
+Et le sens des valeurs, qui explique la double négation qu'on lit dans les
+sources : `<BALLOON-REF> <relative> <SIGN> <reversed>` signifie **0 dB sur
+l'axe, et −3 dB s'écrit `3`**. Une atténuation est donc un nombre positif dans
+le texte.
+
+Le système de coordonnées interne est écrit noir sur blanc : **+x devant,
++y à gauche, +z en haut**.
+
+**Voilà pourquoi aucun fragment du texte ne se trouve dans le binaire** : le
+texte porte une forme **comprimée par symétrie** — 19 arcs pour une demi-sphère
+horizontale — tandis que le binaire porte le ballon **développé**, où
+l'élévation balaie ses 19 positions (CF1) ou 37 (CF2). Un arc de 10 valeurs
+dans le texte s'y retrouve **étalé**, pas contigu.
+
+**Quatre lectures des valeurs ont été éliminées**, arc par arc et bande par
+bande : telle quelle, opposée, et le niveau absolu par `sensibilité ± atténuation`.
+Aucune ne se trouve. La transformation n'est donc pas un simple changement de
+signe ou d'origine — c'est l'expansion géométrique qu'il faut reconstruire.
+
+**Ce qui manque pour finir, et c'est précis** : la **figure 1** de
+`CLF_specs.pdf`, qui définit l'ordre des arcs et le sens des angles. Le texte
+extrait y renvoie sans la décrire (« see Fig. 1 »). Il faut donc l'**ouvrir dans
+un lecteur PDF et regarder cette figure** — c'est la dernière pièce, et elle
+tient sur une page.
 
 **Deux pistes, par ordre de sûreté :**
 
